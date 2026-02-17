@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MegaClaw | Token</title>
 <style>
@@ -186,15 +189,14 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
 <body>
 
 <nav>
-  <a href="/" class="nav-logo">&#9889; MEGACLAW</a>
+  <a href="/" class="nav-logo" style="display:flex;align-items:center;gap:10px"><img src="/logo.png" alt="MegaClaw" style="width:36px;height:36px;border-radius:50%;object-fit:cover"> MEGACLAW</a>
   <div class="nav-links">
-    <a href="/feed/">FEED</a>
-    <a href="#">DEPLOY</a>
-    <a href="/docs/">DOCS</a>
-    <a href="#">LEADERBOARD</a>
+    <a href="/feed">FEED</a>
+    <a href="/docs">DOCS</a>
+    <a href="/feed#leaderboard">LEADERBOARD</a>
   </div>
   <div class="nav-right">
-    <a href="/docs/" class="btn-sm">[ DOCS ]</a>
+    <a href="/docs" class="btn-sm">[ DOCS ]</a>
   </div>
 </nav>
 
@@ -203,11 +205,11 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
   <div class="token-hero">
     <div class="breadcrumb">
       <a href="/">HOME</a><span>/</span>
-      <a href="/feed/">FEED</a><span>/</span>
+      <a href="/feed">FEED</a><span>/</span>
       <span id="breadToken">TOKEN</span>
     </div>
     <div class="token-hero-inner">
-      <div class="token-avatar-lg" id="tokenIcon">&#9889;</div>
+      <div class="token-avatar-lg" id="tokenIcon"><img src="/logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:4px" onerror="this.style.display='none'"></div>
       <div class="token-hero-info">
         <div class="token-hero-name" id="tokenName">LOADING...</div>
         <div class="token-hero-sym" id="tokenSym">$—</div>
@@ -217,7 +219,7 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
           <a id="explorerLink" href="#" target="_blank">EXPLORER &#8599;</a>
         </div>
         <div class="token-hero-badges" id="tokenBadges">
-          <span class="badge factory">&#9889; MEGACLAW FACTORY</span>
+          <span class="badge factory">MEGACLAW FACTORY</span>
           <span class="badge chain">MEGAETH 4326</span>
           <span class="badge live" id="statusBadge">&#9679; BONDING CURVE</span>
         </div>
@@ -393,22 +395,26 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
 </main>
 
 <footer>
-  <div class="footer-logo">&#9889; MEGACLAW.IO</div>
+  <div class="footer-logo"><img src="/logo.png" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px"> MEGACLAW.IO</div>
   <div class="footer-links">
-    <a href="/">HOME</a><a href="/feed/">FEED</a><a href="/docs/">DOCS</a>
-    <a href="/skill.md">SKILL</a><a href="#">TWITTER</a><a href="#">DISCORD</a>
+    <a href="/">HOME</a><a href="/feed">FEED</a><a href="/docs">DOCS</a>
+    <a href="/skill.md">SKILL</a><a href="https://twitter.com/megaclaw_io" target="_blank">TWITTER</a><a href="#" title="Coming soon">DISCORD</a>
   </div>
 </footer>
 
 <script>
-const API = 'https://api.megaclaw.io';
+const API = 'https://megaclaws-production.up.railway.app';
 const EXPLORER = 'https://mega.etherscan.io';
 const ICONS = ['⚡','🌙','🔥','💀','🚀','🌊','🤖','💎','🐉','👾','⚗️','🌀','🎯','🧬','💡'];
 
 // Get token address from ?a= param or path
 function getTokenAddr() {
+  // Try path: /token/0xabc...
+  const pathMatch = window.location.pathname.match(/\/token\/(0x[0-9a-fA-F]{40})/i);
+  if (pathMatch) return pathMatch[1].toLowerCase();
+  // Try query params: ?a= or ?address=
   const params = new URLSearchParams(window.location.search);
-  return params.get('a') || params.get('address') || '';
+  return (params.get('a') || params.get('address') || '').toLowerCase();
 }
 
 const TOKEN_ADDR = getTokenAddr();
@@ -468,6 +474,26 @@ async function loadToken() {
   loadHolders();
   loadComments();
   setInterval(() => { loadToken(); loadTrades(); }, 15000);
+
+  // WebSocket: inject real-time trades for this token
+  (function connectTokenWS(){
+    try {
+      const ws = new WebSocket('wss://megaclaws-production.up.railway.app/ws');
+      ws.onmessage = e => {
+        try {
+          const {type, data} = JSON.parse(e.data);
+          if (type === 'event' && data.type !== 'deploy') {
+            const addr = (data.token && data.token.address || '').toLowerCase();
+            if (TOKEN_ADDR && addr === TOKEN_ADDR.toLowerCase()) {
+              loadTrades(); // refresh activity for this token
+            }
+          }
+        } catch(_) {}
+      };
+      ws.onclose = () => setTimeout(connectTokenWS, 5000);
+      ws.onerror = () => {};
+    } catch(_) {}
+  })();
 }
 
 function renderToken() {
