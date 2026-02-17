@@ -32,7 +32,7 @@
       rdns: 'im.rabby',
       name: 'Rabby Wallet',
       desc: 'Smart wallet for DeFi power users',
-      icon: `<img src="https://cdn.jsdelivr.net/gh/RabbyHub/Rabby@master/src/ui/assets/logo.svg" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#8B5CF6;border-radius:5px;font-size:12px;font-weight:900;color:#fff;font-family:monospace&quot;>R</span>'">`,
+      icon: `<img src="https://avatars.githubusercontent.com/u/84845472?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#8B5CF6;border-radius:5px;font-size:12px;font-weight:900;color:#fff;font-family:monospace&quot;>R</span>'">`,
       installUrl: 'https://rabby.io/',
       detect: () => {
         if (window.rabby) return window.rabby;
