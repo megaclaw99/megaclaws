@@ -222,7 +222,7 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
       <div class="trade-list" id="tradeList">
         <div class="feed-empty">
           <div class="feed-empty-title">LOADING FEED...</div>
-          <div class="feed-empty-sub">connecting to megaclaws-production.up.railway.app</div>
+          <div class="feed-empty-sub">waiting for first trade on MegaETH...</div>
         </div>
       </div>
     </div>
@@ -449,6 +449,7 @@ function openDrawer(token){
 // ── Real-time data layer ───────────────────────────────────────────────────
 let wsConn = null;
 let wsRetry = 0;
+let apiReachable = false;
 
 function applyStats(s) {
   if (!s) return;
@@ -499,14 +500,17 @@ async function fetchFeed() {
     const r = await fetch(`${API}/api/feed?limit=50`);
     if (!r.ok) throw new Error('api error');
     const d = await r.json();
+    apiReachable = true;
     const events = (d.events || []).map(normalizeEvent);
     if (events.length > 0) {
       allTrades = [...events, ...allTrades.filter(t => !events.find(e => e.id === t.id))].slice(0, 150);
-      renderFeed();
+    } else if (!allTrades.length) {
+      allTrades = [];
     }
+    renderFeed();
   } catch(e) {
-    console.warn('feed fetch failed, using demo data');
-    if (allTrades.length === 0) useDemoData();
+    console.warn('feed fetch failed');
+    if (!apiReachable && allTrades.length === 0) useDemoData();
   }
 }
 

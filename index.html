@@ -332,7 +332,8 @@ function applyStats(s){
   document.getElementById('sideVol').textContent=vd;
   document.getElementById('sideChange').textContent='&#9650; '+s.tradesPerMin+'/min';
 }
-async function fetchStats(){try{const r=await fetch(API_BASE+'/api/stats');if(r.ok)applyStats(await r.json());}catch(_){}}
+let usingRealStats=false;
+async function fetchStats(){try{const r=await fetch(API_BASE+'/api/stats');if(r.ok){applyStats(await r.json());usingRealStats=true;}}catch(_){}}
 function connectHomeWS(){
   try{
     const ws=new WebSocket('wss://megaclaws-production.up.railway.app/ws');
@@ -340,7 +341,7 @@ function connectHomeWS(){
     ws.onclose=()=>setTimeout(connectHomeWS,5000);ws.onerror=()=>{};
   }catch(_){}
 }
-function updateStats(){vol+=rndN(500,6000);tc+=rndN(0,2);tr+=rndN(1,5);const bots=rndN(125,175);document.getElementById('vol').textContent='$'+(vol/1000).toFixed(1)+'K';document.getElementById('tokens').textContent=tc;document.getElementById('bots').textContent=bots;document.getElementById('trades').textContent=tr;document.getElementById('sideVol').textContent='$'+(vol/1000).toFixed(1)+'K';document.getElementById('sideChange').textContent='&#9650; +'+(Math.random()*4+1).toFixed(2)+'%';}
+function updateStats(){if(usingRealStats)return;vol+=rndN(500,6000);tc+=rndN(0,2);tr+=rndN(1,5);const bots=rndN(125,175);document.getElementById('vol').textContent='$'+(vol/1000).toFixed(1)+'K';document.getElementById('tokens').textContent=tc;document.getElementById('bots').textContent=bots;document.getElementById('trades').textContent=tr;document.getElementById('sideVol').textContent='$'+(vol/1000).toFixed(1)+'K';document.getElementById('sideChange').textContent='&#9650; +'+(Math.random()*4+1).toFixed(2)+'%';}
 function buildFeed(){const grid=document.getElementById('feedGrid');tokens.forEach(tok=>{const card=document.createElement('div');card.className='feed-card';card.innerHTML=`<div class="card-top"><div class="token-avatar">${tok.icon}</div><div><div class="card-token-name">${tok.sym}</div><div class="card-token-sym">${tok.name}</div></div></div><p class="card-desc">${tok.desc}</p><div class="card-footer"><span>24H CHANGE</span><div class="card-price ${tok.dir}">${tok.price}</div></div>`;grid.appendChild(card);});}
 buildTicker();buildFeed();updateStats();
 for(let i=0;i<14;i++)addActivity();
