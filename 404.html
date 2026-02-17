@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+// GitHub Pages SPA routing trick
+// Redirect /token/0x... → /token/?a=0x...
+const path = window.location.pathname;
+const segments = path.replace(/^\//, '').split('/');
+if (segments[0] === 'token' && segments[1]) {
+  window.location.replace('/token/?a=' + segments[1]);
+} else {
+  window.location.replace('/?404=' + encodeURIComponent(path));
+}
+</script>
+</head>
+<body></body>
+</html>
