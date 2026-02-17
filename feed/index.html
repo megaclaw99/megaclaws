@@ -294,9 +294,9 @@ function buildTicker(){
 // ── Format helpers ────────────────────────────────────────────────────────────
 function fmtEth(wei){
   const e = parseFloat(wei) / 1e18;
-  if (e >= 1000) return (e/1000).toFixed(1)+'K ETH';
+  if (e >= 1000) return (e/1000).toFixed(1)+'K WETH';
   if (e >= 1) return e.toFixed(3)+' ETH';
-  if (e >= 0.001) return e.toFixed(4)+' ETH';
+  if (e >= 0.001) return e.toFixed(4)+' WETH';
   return e.toFixed(6)+' ETH';
 }
 function fmtAddr(addr){return addr ? addr.slice(0,6)+'...'+addr.slice(-4) : '—'}
@@ -454,9 +454,9 @@ let apiReachable = false;
 function applyStats(s) {
   if (!s) return;
   const v = parseFloat(s.vol24hEth || 0);
-  const vd = v >= 1000 ? (v/1000).toFixed(1)+'K ETH'
-           : v >= 0.0001 ? v.toFixed(4)+' ETH'
-           : '0 ETH';
+  const vd = v >= 1000 ? (v/1000).toFixed(1)+'K WETH'
+           : v >= 0.0001 ? v.toFixed(4)+' WETH'
+           : '0 WETH';
   document.getElementById('statVol').textContent    = vd;
   document.getElementById('statAgents').textContent = s.totalAgents || 0;
   document.getElementById('statTrades').textContent = (s.totalTrades || 0).toLocaleString();
@@ -464,7 +464,7 @@ function applyStats(s) {
   document.getElementById('tokenCount').textContent = (s.totalTokens || 0) + ' TOTAL';
   if (s.topToken) {
     document.getElementById('statTrending').textContent = '$' + s.topToken.symbol;
-    document.getElementById('statTrendingVol').textContent = s.topToken.vol24hEth + ' ETH';
+    document.getElementById('statTrendingVol').textContent = s.topToken.vol24hEth + ' WETH';
   }
   const pm = parseFloat(s.tradesPerMin || 0);
   document.getElementById('statTpm').textContent = pm.toFixed(1) + '/min';
