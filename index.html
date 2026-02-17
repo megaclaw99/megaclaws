@@ -312,12 +312,66 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:40px 2
 
 <script>
 const tokens=[{sym:'$CLAW',icon:'&#129440;',name:'MegaClaw',desc:'The flagship agent token powering the entire MegaClaw ecosystem with autonomous trading.',price:'+$420.69',dir:'up'},{sym:'$NEURO',icon:'&#129504;',name:'NeuroBot',desc:'AI-driven sentiment analysis token deployed by AGENT_0x7c for deep market reads.',price:'+$1.3K',dir:'up'},{sym:'$VOID',icon:'&#127744;',name:'VoidTrader',desc:'Executes flash arbitrage across multiple DEX pools fully autonomously.',price:'-$230.10',dir:'down'},{sym:'$APEX',icon:'&#9889;',name:'ApexAgent',desc:'High-frequency trading agent with sub-second execution and MEV protection.',price:'+$890',dir:'up'},{sym:'$DETH',icon:'&#128128;',name:'DeathBot',desc:'Counter-trend AI that profits from market panic events and mass liquidations.',price:'-$690.50',dir:'down'},{sym:'$LUNA',icon:'&#127769;',name:'LunaProtocol',desc:'Overnight yield optimizer that harvests staking rewards and LP fees automatically.',price:'+$2.1K',dir:'up'},{sym:'$MEME',icon:'&#128056;',name:'MemeForge',desc:'Generates and deploys meme coins based on real-time trending social signals.',price:'+$3.4K',dir:'up'},{sym:'$DARK',icon:'&#11035;',name:'DarkAgent',desc:'Operates in the darkest corners of DeFi. Ultra-high risk, ultra-high reward.',price:'-$99.75',dir:'down'}];
-const types=[{t:'buy',label:'BUY',vals:['+$420.69','+$1.3K','+$880','+$2.1K','+$340','+$660']},{t:'sell',label:'SELL',vals:['-$690.50','-$230','-$990.75','-$440','-$120']},{t:'deploy',label:'DEPLOY',vals:['activity','pending tx','confirmed']},{t:'new',label:'NEW',vals:['listed','live','launched']}];
 const agents=['AGENT_0x7c','CLAW_BOT_A','NEO_TRADER','MEGA_X99','VOID_AI','DARK_X1','APEX_42','LUNA_BOT'];
 const tickers=['$CLAW','$NEURO','$VOID','$APEX','$DETH','$LUNA','$MEME','$DARK','$PEPE','$MOON','$WOJAK','$SHIB','$BASED'];
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const rndN=(a,b)=>Math.floor(Math.random()*(b-a)+a);
-function buildTicker(){let h='';for(let i=0;i<28;i++){const tp=rnd(types),tok=rnd(tickers),val=rnd(tp.vals),cls=tp.t==='deploy'||tp.t==='new'?'deploy':tp.t,badge=tp.t==='buy'?'b':tp.t==='sell'?'s':'d',sym=tp.t==='buy'?'[+]':tp.t==='sell'?'[-]':'[>>]';h+=`<div class="tick-item ${cls}"><span class="tick-badge ${badge}">${sym}</span>${tp.label}<strong style="color:var(--moon)">${tok}</strong>${val}</div>`;}document.getElementById('ticker').innerHTML=h+h;}
+
+// ── TICKER ──────────────────────────────────────────────────────────────────
+// seed items (mock) — replaced progressively by real WS events
+const SEED_TICKS=[
+  {cls:'buy',   badge:'[+]', label:'BUY',    tok:'$CLAW',  val:'+$420.69'},
+  {cls:'deploy',badge:'[>>]',label:'NEW',     tok:'$BASED', val:'LISTED'},
+  {cls:'deploy',badge:'[>>]',label:'DEPLOY',  tok:'$VOID',  val:'CONFIRMED'},
+  {cls:'buy',   badge:'[+]', label:'BUY',    tok:'$SHIB',  val:'+$660'},
+  {cls:'sell',  badge:'[-]', label:'SELL',   tok:'$CLAW',  val:'-$690.50'},
+  {cls:'deploy',badge:'[>>]',label:'NEW',     tok:'$DETH',  val:'LIVE'},
+  {cls:'buy',   badge:'[+]', label:'BUY',    tok:'$APEX',  val:'+$2.1K'},
+  {cls:'sell',  badge:'[-]', label:'SELL',   tok:'$MOON',  val:'-$230'},
+  {cls:'deploy',badge:'[>>]',label:'DEPLOY',  tok:'$MEME',  val:'PENDING TX'},
+  {cls:'buy',   badge:'[+]', label:'BUY',    tok:'$NEURO', val:'+$880'},
+  {cls:'sell',  badge:'[-]', label:'SELL',   tok:'$WOJAK', val:'-$990.75'},
+  {cls:'deploy',badge:'[>>]',label:'NEW',     tok:'$LUNA',  val:'LAUNCHED'},
+  {cls:'buy',   badge:'[+]', label:'BUY',    tok:'$PEPE',  val:'+$1.3K'},
+  {cls:'deploy',badge:'[>>]',label:'DEPLOY',  tok:'$DARK',  val:'ACTIVITY'},
+];
+
+function tickItemHTML(cls, badge, label, tok, val){
+  return `<div class="tick-item ${cls}">${badge}&nbsp;${label}&nbsp;<strong style="color:var(--moon)">${tok}</strong>&nbsp;${val}</div>`;
+}
+
+function buildTicker(){
+  let h='';
+  SEED_TICKS.forEach(t=>{ h+=tickItemHTML(t.cls,t.badge,t.label,t.tok,t.val); });
+  const track=document.getElementById('ticker');
+  track.innerHTML=h+h; // duplicate for seamless loop
+}
+
+let tickerRealCount=0;
+function pushToTicker(ev){
+  // Format a real WS event into a ticker item and prepend
+  const sym='$'+(ev.token?.symbol||ev.symbol||'???');
+  let cls,badge,label,val;
+  const amtEth=parseFloat(ev.amountEth||ev.amount_eth||0);
+  const usd=amtEth&&ethPrice?(amtEth*ethPrice):0;
+  const usdStr=usd>=1000?'$'+(usd/1000).toFixed(1)+'K':usd>0?'$'+usd.toFixed(2):'';
+  if(ev.type==='buy'){
+    cls='buy';badge='[+]';label='BUY';val=usdStr?'+'+usdStr:'+'+amtEth.toFixed(4)+' ETH';
+  } else if(ev.type==='sell'){
+    cls='sell';badge='[-]';label='SELL';val=usdStr?'-'+usdStr:'-'+amtEth.toFixed(4)+' ETH';
+  } else {
+    cls='deploy';badge='[>>]';label='NEW';val='LISTED';
+  }
+  const track=document.getElementById('ticker');
+  if(!track)return;
+  const div=document.createElement('div');
+  div.className=`tick-item ${cls}`;
+  div.innerHTML=`${badge}&nbsp;${label}&nbsp;<strong style="color:var(--moon)">${sym}</strong>&nbsp;${val}`;
+  track.prepend(div);
+  tickerRealCount++;
+  // After enough real items, stop the CSS duplication approach and let real items fill naturally
+  while(track.children.length>60)track.lastChild.remove();
+}
 
 const API_BASE='https://megaclaws-production.up.railway.app';
 let vol=1420000,tc=847,tr=12489;
@@ -338,11 +392,23 @@ let ethPrice=0;
 async function fetchEthPrice(){try{const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');if(r.ok){const d=await r.json();ethPrice=d.ethereum?.usd||0;}}catch(_){try{const r=await fetch('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD');if(r.ok){const d=await r.json();ethPrice=d.USD||0;}}catch(__){}}}
 function fmtUsd(eth){const usd=parseFloat(eth||0)*ethPrice;if(!usd||!ethPrice)return parseFloat(eth||0).toFixed(4)+' WETH';if(usd>=1000000)return '$'+(usd/1000000).toFixed(2)+'M';if(usd>=1000)return '$'+(usd/1000).toFixed(1)+'K';return '$'+usd.toFixed(2);}
 async function fetchStats(){try{const r=await fetch(API_BASE+'/api/stats');if(r.ok){applyStats(await r.json());usingRealStats=true;}}catch(_){}}
+let _wsRetry=2000;
 function connectHomeWS(){
   try{
     const ws=new WebSocket('wss://megaclaws-production.up.railway.app/ws');
-    ws.onmessage=e=>{try{const {type,data}=JSON.parse(e.data);if(type==='stats')applyStats(data);if(type==='event'&&data.type==='deploy'){loadTokenTable();}}catch(_){}};
-    ws.onclose=()=>setTimeout(connectHomeWS,5000);ws.onerror=()=>{};
+    ws.onopen=()=>{_wsRetry=2000;};
+    ws.onmessage=e=>{
+      try{
+        const {type,data}=JSON.parse(e.data);
+        if(type==='stats') applyStats(data);
+        if(type==='event'){
+          pushToTicker(data);
+          if(data.type==='deploy') loadTokenTable();
+        }
+      }catch(_){}
+    };
+    ws.onclose=()=>{_wsRetry=Math.min(_wsRetry*2,30000);setTimeout(connectHomeWS,_wsRetry);};
+    ws.onerror=()=>{};
   }catch(_){}
 }
 function updateStats(){if(usingRealStats)return;vol+=rndN(500,6000);tc+=rndN(0,2);tr+=rndN(1,5);const bots=rndN(125,175);document.getElementById('vol').textContent='$'+(vol/1000).toFixed(1)+'K';document.getElementById('tokens').textContent=tc;document.getElementById('bots').textContent=bots;document.getElementById('trades').textContent=tr;}
