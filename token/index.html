@@ -815,34 +815,139 @@ function updateEstimate() {
   }
 }
 
+// ── Contract ABIs (subset needed for browser trades) ────────────────────────
+const BONDING_ABI = [
+  'function buyTokens(uint256 minTokensOut) external payable',
+  'function sellTokens(uint256 tokenAmount, uint256 minETHOut) external',
+  'function getReserves() external view returns (uint256 reserveETH, uint256 reserveToken)',
+  'function balanceOf(address account) external view returns (uint256)',
+  'function allowance(address owner, address spender) external view returns (uint256)',
+  'function approve(address spender, uint256 amount) external returns (bool)',
+];
+
+const SLIPPAGE_BPS = 300n; // 3%
+
+function applySlip(amount) {
+  return (amount * (10000n - SLIPPAGE_BPS)) / 10000n;
+}
+
+// Estimate locally (mirrors contract math)
+function localEstimateBuy(ethInWei, rETH, rToken) {
+  if (!ethInWei || ethInWei === 0n) return 0n;
+  const feeBps = 100n;
+  const fee = (ethInWei * feeBps) / 10000n;
+  const ethAfterFee = ethInWei - fee;
+  if (rETH === 0n) {
+    const TOTAL = 1_000_000_000n * (10n ** 18n);
+    return (ethAfterFee * TOTAL) / (20000n * (10n ** 18n));
+  }
+  const k = rETH * rToken;
+  const newRETH = rETH + ethAfterFee;
+  const newRToken = k / newRETH;
+  return rToken > newRToken ? rToken - newRToken : 0n;
+}
+
+function localEstimateSell(tokensInWei, rETH, rToken) {
+  if (!tokensInWei || tokensInWei === 0n || rETH === 0n || rToken === 0n) return 0n;
+  const k = rETH * rToken;
+  const newRToken = rToken + tokensInWei;
+  const newRETH = k / newRToken;
+  const ethOut = rETH > newRETH ? rETH - newRETH : 0n;
+  const feeBps = 100n;
+  const fee = (ethOut * feeBps) / 10000n;
+  return ethOut - fee;
+}
+
 async function executeTrade() {
   const amt = parseFloat(document.getElementById('amountInput').value);
-  if (!amt || amt<=0) { showTx('Enter an amount','err'); return; }
-  if (!MC.wallet.connected) { showTx('Connect wallet first','err'); return; }
+  if (!amt || amt <= 0) { showTx('Enter an amount', 'err'); return; }
+  if (!MC?.wallet?.connected) { showTx('Connect wallet first', 'err'); return; }
+  if (!window.ethers) { showTx('ethers.js not loaded — reload page', 'err'); return; }
 
-  const amtWei = BigInt(Math.floor(amt*1e18)).toString();
-  showTx('Submitting trade...','loading');
-  document.getElementById('tradeBtn').disabled=true;
+  const provider = new ethers.BrowserProvider(MC.wallet.provider);
+  const signer   = await provider.getSigner();
+
+  const amtWei = BigInt(Math.round(amt * 1e18));
+
+  showTx('Confirm in wallet...', 'loading');
+  document.getElementById('tradeBtn').disabled = true;
 
   try {
-    const r = await fetch(`${API}/api/trades/execute`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-Wallet':MC.wallet.address||''},
-      body: JSON.stringify({
-        tokenAddress: TOKEN_ADDR,
-        tradeDirection: tradeMode.toUpperCase(),
-        amount: amtWei,
-        slippageBps: 300
-      })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.message||'Trade failed');
-    showTx(`&#9989; ${tradeMode.toUpperCase()} executed &mdash; <a href="${EXPLORER}/tx/${d.txHash}" target="_blank" style="color:var(--green)">view tx &#8599;</a>`,'ok');
-    loadToken(); loadTrades();
+    // ── Switch to MegaETH if needed ──────────────────────────────────────────
+    const net = await provider.getNetwork();
+    if (net.chainId !== 4326n) {
+      showTx('Switching to MegaETH...', 'loading');
+      try {
+        await MC.wallet.provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x10E6' }],
+        });
+      } catch(sw) {
+        if (sw.code === 4902 || sw.code === -32603) {
+          await MC.wallet.provider.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x10E6', chainName: 'MegaETH Mainnet',
+              nativeCurrency: { name:'ETH', symbol:'ETH', decimals:18 },
+              rpcUrls: ['https://mainnet.megaeth.com/rpc'],
+              blockExplorerUrls: ['https://mega.etherscan.io'],
+            }],
+          });
+        } else { throw sw; }
+      }
+    }
+
+    const curve = new ethers.Contract(TOKEN_ADDR, BONDING_ABI, signer);
+
+    let tx, receipt;
+
+    if (tradeMode === 'buy') {
+      // Get live reserves for slippage calc
+      const [rETH, rToken] = await curve.getReserves();
+      const estimated  = localEstimateBuy(amtWei, rETH, rToken);
+      const minTokens  = applySlip(estimated);
+
+      showTx('Waiting for confirmation...', 'loading');
+      tx      = await curve.buyTokens(minTokens, { value: amtWei });
+      receipt = await tx.wait();
+
+    } else {
+      // SELL — amtWei = token amount
+      // Check & request approve if needed
+      const allowance = await curve.allowance(await signer.getAddress(), TOKEN_ADDR);
+      if (allowance < amtWei) {
+        showTx('Approving tokens...', 'loading');
+        const approveTx = await curve.approve(TOKEN_ADDR, amtWei);
+        await approveTx.wait();
+      }
+
+      const [rETH, rToken] = await curve.getReserves();
+      const estimated = localEstimateSell(amtWei, rETH, rToken);
+      const minETH    = applySlip(estimated);
+
+      showTx('Waiting for confirmation...', 'loading');
+      tx      = await curve.sellTokens(amtWei, minETH);
+      receipt = await tx.wait();
+    }
+
+    const txHash = receipt?.hash || tx?.hash || '';
+    showTx(
+      `&#9989; ${tradeMode.toUpperCase()} confirmed &mdash; <a href="${EXPLORER}/tx/${txHash}" target="_blank" style="color:var(--green)">view tx &#8599;</a>`,
+      'ok'
+    );
+    document.getElementById('amountInput').value = '';
+    setTimeout(() => { loadToken(); loadTrades(); }, 2000);
+
   } catch(e) {
-    showTx(e.message,'err');
+    const msg = e?.reason || e?.shortMessage || e?.message || 'Transaction failed';
+    if (msg.includes('user rejected') || msg.includes('User denied')) {
+      showTx('Transaction rejected by user', 'err');
+    } else {
+      showTx(msg.slice(0, 120), 'err');
+    }
   }
-  document.getElementById('tradeBtn').disabled=false;
+
+  document.getElementById('tradeBtn').disabled = false;
 }
 
 function showTx(msg, type) {
@@ -906,6 +1011,7 @@ function setTradeLocked(locked) {
 
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
 <script src="/wallet.js"></script>
 </body>
 </html>

@@ -240,3 +240,40 @@ router.get('/:id/trades', async (req, res) => {
 });
 
 module.exports = router;
+
+// GET /api/tokens/:address/quote?direction=BUY|SELL&amount=<wei>
+// Public — no auth required. Returns estimated output.
+router.get('/:address/quote', async (req, res) => {
+  try {
+    const addr = req.params.address.toLowerCase();
+    if (!/^0x[0-9a-f]{40}$/.test(addr)) {
+      return res.status(400).json({ error: 'Invalid address' });
+    }
+    const direction = (req.query.direction || 'BUY').toUpperCase();
+    const amountStr = req.query.amount || '0';
+    if (!/^\d+$/.test(amountStr)) {
+      return res.status(400).json({ error: 'amount must be a positive integer (wei)' });
+    }
+    const { estimateBuy, estimateSell, getBondingCurve } = require('../chain');
+    const { ethers } = require('ethers');
+    const amountBig = BigInt(amountStr);
+    let estimated;
+    if (direction === 'BUY') {
+      estimated = await estimateBuy(addr, amountBig);
+    } else {
+      estimated = await estimateSell(addr, amountBig);
+    }
+    const curve = getBondingCurve(addr);
+    const [reserveETH, reserveToken] = await curve.getReserves();
+    res.json({
+      direction,
+      amountIn: amountStr,
+      estimatedOut: estimated.toString(),
+      estimatedOutFormatted: ethers.formatEther(estimated),
+      reserveETH: ethers.formatEther(reserveETH),
+      reserveToken: ethers.formatEther(reserveToken),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
