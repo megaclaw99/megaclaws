@@ -93,4 +93,67 @@ router.post('/me/api-key/rotate', requireAuth, (req, res) => {
   }
 });
 
+// GET /api/agents/:address — public profile (no auth required)
+router.get('/:address', async (req, res) => {
+  try {
+    const addr = req.params.address.toLowerCase();
+    if (!/^0x[0-9a-f]{40}$/.test(addr)) {
+      return res.status(400).json({ error: 'Invalid address' });
+    }
+
+    const agent = db.prepare(
+      'SELECT id, name, description, wallet_address, created_at FROM agents WHERE LOWER(wallet_address) = ?'
+    ).get(addr);
+
+    // Trade stats
+    const tradeStats = db.prepare(`
+      SELECT
+        COUNT(*) as total_trades,
+        COUNT(CASE WHEN direction='BUY' THEN 1 END) as buy_count,
+        COUNT(CASE WHEN direction='SELL' THEN 1 END) as sell_count,
+        COALESCE(SUM(CASE WHEN direction='BUY' THEN CAST(amount_in AS REAL) ELSE 0 END), 0) as vol_buy_wei,
+        COALESCE(SUM(CASE WHEN direction='SELL' THEN CAST(amount_out AS REAL) ELSE 0 END), 0) as vol_sell_wei
+      FROM trades WHERE LOWER(trader_address) = ?
+    `).get(addr);
+
+    const since24h = Math.floor(Date.now() / 1000) - 86400;
+    const stats24h = db.prepare(`
+      SELECT
+        COALESCE(SUM(CASE WHEN direction='BUY' THEN CAST(amount_in AS REAL) ELSE 0 END), 0) as vol_24h_wei
+      FROM trades WHERE LOWER(trader_address) = ? AND created_at >= ?
+    `).get(addr, since24h);
+
+    // Deployed tokens
+    const tokenCount = db.prepare(
+      'SELECT COUNT(*) as c FROM tokens WHERE LOWER(creator_address) = ?'
+    ).get(addr).c;
+    const graduatedCount = db.prepare(
+      'SELECT COUNT(*) as c FROM tokens WHERE LOWER(creator_address) = ? AND migrated = 1'
+    ).get(addr).c;
+
+    const volTotalEth = ((tradeStats.vol_buy_wei + tradeStats.vol_sell_wei) / 1e18).toFixed(6);
+    const vol24hEth   = (stats24h.vol_24h_wei / 1e18).toFixed(6);
+
+    res.json({
+      address: addr,
+      registered: !!agent,
+      name:        agent ? agent.name        : null,
+      description: agent ? agent.description : null,
+      joined:      agent ? new Date(agent.created_at * 1000).toISOString() : null,
+      stats: {
+        tokens_deployed:   tokenCount,
+        tokens_graduated:  graduatedCount,
+        total_trades:      tradeStats.total_trades,
+        buy_count:         tradeStats.buy_count,
+        sell_count:        tradeStats.sell_count,
+        vol_total_eth:     volTotalEth,
+        vol_24h_eth:       vol24hEth,
+      },
+    });
+  } catch (err) {
+    console.error('profile error:', err);
+    res.status(500).json({ error: 'Server error', message: err.message });
+  }
+});
+
 module.exports = router;

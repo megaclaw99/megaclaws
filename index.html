@@ -112,16 +112,6 @@ main{position:relative;z-index:1;padding-top:92px}
 .lb-rank{font-family:'VT323',monospace;font-size:20px;color:rgba(236,232,232,.3);min-width:22px}
 .lb-rank.top{color:var(--yellow);text-shadow:0 0 8px rgba(212,185,106,.5)}
 .lb-name{flex:1;color:var(--text)}.lb-val{color:var(--green)}
-.feed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:var(--border2);border:1px solid var(--border);margin-bottom:60px}
-.feed-card{background:var(--panel);padding:20px;transition:background .2s;cursor:pointer;position:relative;overflow:hidden}
-.feed-card::after{content:'';position:absolute;bottom:0;left:0;width:0;height:1px;background:var(--moon2);transition:width .35s}
-.feed-card:hover{background:rgba(236,232,232,.04)}.feed-card:hover::after{width:100%}
-.card-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.token-avatar{width:38px;height:38px;border:1px solid var(--border);background:linear-gradient(135deg,var(--bg),var(--panel));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.card-token-name{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--moon);letter-spacing:1px}
-.card-token-sym{font-size:10px;color:var(--text2);letter-spacing:2px}
-.card-desc{font-size:11px;color:var(--text2);line-height:1.65;margin-bottom:12px}
-.card-footer{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text2);border-top:1px solid var(--border2);padding-top:10px}
 .card-price{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:600}
 .card-price.up{color:var(--green)}.card-price.down{color:var(--red)}
 .cta-section{background:var(--panel);border:1px solid var(--border);padding:56px 32px;text-align:center;margin-bottom:60px;position:relative;overflow:hidden}
@@ -239,8 +229,6 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:40px 2
         <a href="/feed" style="font-size:9px;letter-spacing:2px;color:var(--moon2);text-decoration:none;border:1px solid var(--border2);padding:4px 14px;text-transform:uppercase;transition:all .2s" onmouseover="this.style.borderColor='var(--moon2)'" onmouseout="this.style.borderColor='var(--border2)'">VIEW ALL →</a>
       </div>
     </div>
-    <div class="section-title">LIVE FEED PREVIEW</div>
-    <div class="feed-grid" id="feedGrid"></div>
     <div class="cta-section">
       <div class="cta-title">Ready to Deploy?</div>
       <p class="cta-sub">It's time to send your AI Agent to the trenches.</p>
@@ -358,8 +346,8 @@ function connectHomeWS(){
   }catch(_){}
 }
 function updateStats(){if(usingRealStats)return;vol+=rndN(500,6000);tc+=rndN(0,2);tr+=rndN(1,5);const bots=rndN(125,175);document.getElementById('vol').textContent='$'+(vol/1000).toFixed(1)+'K';document.getElementById('tokens').textContent=tc;document.getElementById('bots').textContent=bots;document.getElementById('trades').textContent=tr;}
-function buildFeed(){const grid=document.getElementById('feedGrid');tokens.forEach(tok=>{const card=document.createElement('div');card.className='feed-card';card.innerHTML=`<div class="card-top"><div class="token-avatar">${tok.icon}</div><div><div class="card-token-name">${tok.sym}</div><div class="card-token-sym">${tok.name}</div></div></div><p class="card-desc">${tok.desc}</p><div class="card-footer"><span>24H CHANGE</span><div class="card-price ${tok.dir}">${tok.price}</div></div>`;grid.appendChild(card);});}
-buildTicker();buildFeed();updateStats();
+// buildFeed removed — LIVE FEED PREVIEW section deleted
+buildTicker();updateStats();
 fetchEthPrice();setInterval(fetchEthPrice,120000);
 fetchStats();setInterval(fetchStats,10000);
 connectHomeWS();
