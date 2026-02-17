@@ -189,6 +189,50 @@ main{position:relative;z-index:1;padding-top:100px;padding-bottom:60px}
 .tooltip{position:relative;cursor:default}
 .tooltip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);color:var(--text2);font-size:9px;letter-spacing:1px;padding:4px 10px;white-space:nowrap;z-index:100}
 
+/* ── ERC-8004 ROW ── */
+.erc8004-row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border2);border:1px solid var(--border);margin-bottom:1px}
+.erc8004-panel{background:var(--panel);padding:20px 22px}
+.erc8004-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border2)}
+.erc8004-title{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;color:var(--text);text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.erc8004-spec-link{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text2);border:1px solid var(--border2);padding:1px 6px;letter-spacing:1px;text-decoration:none;transition:all .2s}
+.erc8004-spec-link:hover{color:var(--moon2);border-color:var(--moon2)}
+.erc8004-badge{font-size:8px;letter-spacing:2px;padding:2px 8px;border:1px solid var(--border2);color:var(--text2);font-family:'Share Tech Mono',monospace;text-transform:uppercase}
+.live-badge{border-color:rgba(111,207,122,.3);color:var(--green);background:rgba(111,207,122,.06);display:flex;align-items:center;gap:4px}
+.erc8004-empty{text-align:center;padding:20px 12px;color:var(--text2);font-size:10px;letter-spacing:1.5px;line-height:1.8}
+.erc8004-empty-icon{font-family:'VT323',monospace;font-size:32px;opacity:.3;margin-bottom:6px}
+/* reputation score grid */
+.rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.rep-metric{background:rgba(236,232,232,.025);border:1px solid var(--border2);padding:10px 12px}
+.rep-metric-label{font-size:8px;letter-spacing:1.5px;color:var(--text2);text-transform:uppercase;margin-bottom:5px}
+.rep-metric-val{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--moon)}
+.rep-metric-val.good{color:var(--green)}.rep-metric-val.bad{color:var(--red)}.rep-metric-val.mid{color:var(--yellow)}
+.rep-metric-sub{font-size:8px;color:var(--text2);margin-top:2px}
+.rep-feedback-list{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+.rep-feedback-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:rgba(236,232,232,.02);border-left:2px solid var(--border2);font-size:9px}
+.rep-feedback-item.pos{border-left-color:var(--green)}.rep-feedback-item.neg{border-left-color:var(--red)}
+.rep-feedback-score{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;min-width:36px}
+.rep-feedback-score.pos{color:var(--green)}.rep-feedback-score.neg{color:var(--red)}
+.rep-feedback-meta{color:var(--text2);line-height:1.6}
+.rep-feedback-tag{color:var(--moon2);letter-spacing:.5px}
+.rep-feedback-from{color:var(--text2);font-size:8px}
+.rep-source{font-size:8px;color:var(--text2);letter-spacing:1px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border2)}
+.rep-source a{color:var(--text2);text-decoration:none}.rep-source a:hover{color:var(--moon2)}
+/* recent activity mini */
+.recent-act-list{display:flex;flex-direction:column;gap:3px}
+.recent-act-item{display:flex;align-items:center;gap:8px;padding:9px 10px;background:rgba(236,232,232,.018);border-left:2px solid transparent;font-size:10px;cursor:pointer;transition:background .15s}
+.recent-act-item:hover{background:rgba(236,232,232,.04)}
+.recent-act-item.buy{border-left-color:var(--green)}.recent-act-item.sell{border-left-color:var(--red)}.recent-act-item.deploy{border-left-color:var(--yellow)}
+.recent-act-type{font-size:8px;font-weight:700;letter-spacing:1.5px;min-width:44px}
+.buy .recent-act-type{color:var(--green)}.sell .recent-act-type{color:var(--red)}.recent-act-item.deploy .recent-act-type{color:var(--yellow)}
+.recent-act-sym{color:var(--moon);min-width:60px}
+.recent-act-val{flex:1;text-align:right;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:600}
+.buy .recent-act-val{color:var(--green)}.sell .recent-act-val{color:var(--red)}.recent-act-item.deploy .recent-act-val{color:var(--yellow)}
+.recent-act-time{color:var(--text2);font-size:9px;min-width:28px;text-align:right}
+.recent-act-footer{margin-top:10px;text-align:right}
+.recent-act-footer a{font-size:9px;color:var(--text2);text-decoration:none;letter-spacing:1.5px;border:1px solid var(--border2);padding:4px 12px;transition:all .2s}
+.recent-act-footer a:hover{color:var(--moon);border-color:var(--border)}
+@media(max-width:700px){.erc8004-row{grid-template-columns:1fr}}
+
 /* ── ACCOUNT TYPE BANNER ── */
 .acct-banner{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--border2);margin-bottom:12px;background:rgba(236,232,232,.025)}
 .acct-banner.agent{border-color:rgba(111,207,122,.25);background:rgba(111,207,122,.04)}
@@ -311,6 +355,42 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:32px 2
       <button class="btn-follow" id="followBtn" onclick="toggleFollow()">[ FOLLOW ]</button>
       <div class="joined-at" id="joinedAt">JOINED --</div>
     </div>
+  </div>
+
+  <!-- ERC-8004 REPUTATION + RECENT ACTIVITY -->
+  <div class="erc8004-row">
+
+    <!-- ERC-8004 Reputation -->
+    <div class="erc8004-panel">
+      <div class="erc8004-header">
+        <div class="erc8004-title">
+          ERC-8004 Reputation
+          <a href="https://eips.ethereum.org/EIPS/eip-8004" target="_blank" class="erc8004-spec-link">[SPEC]</a>
+        </div>
+        <div class="erc8004-badge" id="erc8004Badge">DRAFT</div>
+      </div>
+      <div id="erc8004Content">
+        <div class="erc8004-empty">
+          <div class="erc8004-empty-icon">[ ]</div>
+          <div>No ERC-8004 reputation data is available for this profile yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="erc8004-panel">
+      <div class="erc8004-header">
+        <div class="erc8004-title">Recent Activity</div>
+        <div class="erc8004-badge live-badge" id="recentActivityBadge"><span class="ct-pulse"></span>LIVE</div>
+      </div>
+      <div id="recentActivityContent">
+        <div class="erc8004-empty">
+          <div class="erc8004-empty-icon">[ ]</div>
+          <div>No recent trades available.</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- AGENT STATS BAR -->
@@ -941,6 +1021,147 @@ document.getElementById('searchBox').addEventListener('keydown', e => {
 // ── CONNECT WALLET ────────────────────────────────────────────────────────────
 // wallet handled by wallet.js
 
+// ── ERC-8004 REPUTATION ───────────────────────────────────────────────────────────────────────
+// ERC-8004 is a DRAFT EIP (2025-08-13) for Trustless Agents.
+// Reputation Registry interface: giveFeedback / NewFeedback event
+// Since no known contracts are deployed on MegaETH yet, we gracefully try
+// known mainnet/L2 addresses and fall back to empty state.
+
+// Known ERC-8004 Reputation Registry deployments (add when available)
+const ERC8004_REGISTRIES = [
+  // { chain: 'MegaETH', chainId: 4326, rpc: 'https://mainnet.megaeth.com/rpc', address: '0x...' },
+  // { chain: 'Ethereum', chainId: 1, rpc: 'https://ethereum-rpc.publicnode.com', address: '0x...' },
+];
+
+const ERC8004_REP_ABI = [
+  'event NewFeedback(uint256 indexed agentId, address indexed clientAddress, uint64 feedbackIndex, int128 value, uint8 valueDecimals, string indexed indexedTag1, string tag1, string tag2, string endpoint, string feedbackURI, bytes32 feedbackHash)',
+  'function getIdentityRegistry() external view returns (address)',
+];
+const ERC8004_ID_ABI = [
+  'function getAgentWallet(uint256 agentId) external view returns (address)',
+  'event Registered(uint256 indexed agentId, string agentURI, address indexed owner)',
+];
+
+async function fetchERC8004Reputation(walletAddr) {
+  // Try each known registry
+  for (const reg of ERC8004_REGISTRIES) {
+    try {
+      const provider = new ethers.JsonRpcProvider(reg.rpc);
+      const repContract = new ethers.Contract(reg.address, ERC8004_REP_ABI, provider);
+      // Query NewFeedback events where clientAddress matches wallet
+      const filter = repContract.filters.NewFeedback(null, walletAddr);
+      const logs   = await repContract.queryFilter(filter, -50000);
+      if (logs.length > 0) return { registry: reg, logs, source: 'chain' };
+    } catch(_) {}
+  }
+  return null;
+}
+
+function renderERC8004(data) {
+  const el = document.getElementById('erc8004Content');
+  if (!el) return;
+
+  if (!data) {
+    el.innerHTML = `
+      <div class="erc8004-empty">
+        <div class="erc8004-empty-icon">[ ]</div>
+        <div>No ERC-8004 reputation data is available for this profile yet.</div>
+      </div>
+      <div class="rep-source">
+        Standard: <a href="https://eips.ethereum.org/EIPS/eip-8004" target="_blank">ERC-8004 Trustless Agents [DRAFT]</a>
+        &nbsp;&middot;&nbsp; Reputation Registry not yet deployed on MegaETH
+      </div>`;
+    return;
+  }
+
+  // If we have data (future use when contracts are deployed)
+  const { logs, registry } = data;
+  const badge = document.getElementById('erc8004Badge');
+  if (badge) { badge.textContent = registry.chain; badge.style.color = 'var(--green)'; badge.style.borderColor = 'rgba(111,207,122,.3)'; }
+
+  // Aggregate score metrics by tag1
+  const byTag = {};
+  for (const log of logs) {
+    const tag = log.args.tag1 || 'general';
+    const val = Number(log.args.value) / Math.pow(10, Number(log.args.valueDecimals));
+    if (!byTag[tag]) byTag[tag] = { sum: 0, count: 0 };
+    byTag[tag].sum += val; byTag[tag].count++;
+  }
+
+  const metrics = Object.entries(byTag).slice(0, 4).map(([tag, d]) => {
+    const avg = (d.sum / d.count).toFixed(1);
+    const cls = parseFloat(avg) >= 70 ? 'good' : parseFloat(avg) >= 40 ? 'mid' : 'bad';
+    return `<div class="rep-metric">
+      <div class="rep-metric-label">${tag}</div>
+      <div class="rep-metric-val ${cls}">${avg}</div>
+      <div class="rep-metric-sub">${d.count} feedback(s)</div>
+    </div>`;
+  }).join('');
+
+  const feedbacks = logs.slice(-5).reverse().map(log => {
+    const val = Number(log.args.value) / Math.pow(10, Number(log.args.valueDecimals));
+    const cls = val >= 0 ? 'pos' : 'neg';
+    const from = (log.args.clientAddress || '').slice(0,6) + '...' + (log.args.clientAddress || '').slice(-4);
+    return `<div class="rep-feedback-item ${cls}">
+      <span class="rep-feedback-score ${cls}">${val >= 0 ? '+' : ''}${val.toFixed(1)}</span>
+      <div class="rep-feedback-meta">
+        <span class="rep-feedback-tag">${log.args.tag1 || 'general'}</span>
+        ${log.args.tag2 ? ' &middot; ' + log.args.tag2 : ''}
+        <br><span class="rep-feedback-from">from ${from}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="rep-grid">${metrics || '<div style="grid-column:1/-1;color:var(--text2);font-size:10px;text-align:center;padding:8px">No score metrics</div>'}</div>
+    <div class="rep-feedback-list">${feedbacks}</div>
+    <div class="rep-source">
+      Registry: <a href="${EXPLORER}/address/${registry.address}" target="_blank">${registry.chain}</a>
+      &nbsp;&middot;&nbsp; <a href="https://eips.ethereum.org/EIPS/eip-8004" target="_blank">ERC-8004 Spec</a>
+    </div>`;
+}
+
+// ── RECENT ACTIVITY (mini) ────────────────────────────────────────────────────
+async function fetchRecentActivity() {
+  try {
+    const res = await fetch(`${API}/api/feed?address=${WALLET}&limit=5&type=all`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    return (data.events || []).map(normalizeEvent);
+  } catch(_) { return []; }
+}
+
+function renderRecentActivity(events) {
+  const el = document.getElementById('recentActivityContent');
+  if (!el) return;
+  if (!events || !events.length) {
+    el.innerHTML = `
+      <div class="erc8004-empty">
+        <div class="erc8004-empty-icon">[ ]</div>
+        <div>No recent trades available.</div>
+      </div>`;
+    return;
+  }
+  const rows = events.map(ev => {
+    const valStr = ev.type === 'buy'  ? '+' + parseFloat(ev.val||0).toFixed(4) + ' ETH'
+                 : ev.type === 'sell' ? '-' + parseFloat(ev.val||0).toFixed(4) + ' ETH'
+                 : 'DEPLOYED';
+    const txUrl = ev.txHash ? `${EXPLORER}/tx/${ev.txHash}` : '#';
+    return `
+      <div class="recent-act-item ${ev.type}" onclick="window.open('${txUrl}','_blank')">
+        <span class="recent-act-type">${ev.type.toUpperCase()}</span>
+        <span class="recent-act-sym">$${ev.sym}</span>
+        <span class="recent-act-val">${valStr}</span>
+        <span class="recent-act-time">${timeAgo(ev.ts)}</span>
+      </div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="recent-act-list">${rows}</div>
+    <div class="recent-act-footer">
+      <a href="/feed#${WALLET}">VIEW ALL ACTIVITY →</a>
+    </div>`;
+}
+
 // ── ETH PRICE ────────────────────────────────────────────────────────────────────────────────
 async function fetchEthPrice() {
   try {
@@ -1256,6 +1477,16 @@ async function init() {
   // WebSocket for live updates
   connectProfileWS();
 
+  // ── ERC-8004 + Recent Activity ────────────────────────────────────────────
+  // Run in parallel, don't block main profile load
+  fetchERC8004Reputation(WALLET).then(renderERC8004).catch(() => renderERC8004(null));
+  fetchRecentActivity().then(renderRecentActivity).catch(() => renderRecentActivity([]));
+
+  // Poll recent activity every 30s (live)
+  setInterval(() => {
+    fetchRecentActivity().then(renderRecentActivity).catch(() => {});
+  }, 30000);
+
   // Poll stats every 30s, created tokens every 60s
   setInterval(() => fetchProfile().then(applyProfileData).catch(()=>{}), 30000);
   setInterval(() => {
@@ -1269,6 +1500,7 @@ window.addEventListener('load', init);
 
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
 <script src="/wallet.js"></script>
 </body>
 </html>
