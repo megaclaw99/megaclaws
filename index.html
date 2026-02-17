@@ -340,36 +340,52 @@ function tickItemHTML(cls, badge, label, tok, val){
   return `<div class="tick-item ${cls}">${badge}&nbsp;${label}&nbsp;<strong style="color:var(--moon)">${tok}</strong>&nbsp;${val}</div>`;
 }
 
-function buildTicker(){
-  let h='';
-  SEED_TICKS.forEach(t=>{ h+=tickItemHTML(t.cls,t.badge,t.label,t.tok,t.val); });
+function buildTickerFromItems(items){
   const track=document.getElementById('ticker');
+  let h='';
+  items.forEach(t=>{ h+=tickItemHTML(t.cls,t.badge,t.label,t.tok,t.val); });
   track.innerHTML=h+h; // duplicate for seamless loop
+}
+
+function evToTickItem(ev){
+  const sym='$'+(ev.token?.symbol||ev.symbol||'???');
+  const amtEth=parseFloat(ev.amountEth||ev.amount_eth||ev.ethAmount||0);
+  const usd=amtEth&&ethPrice?amtEth*ethPrice:0;
+  const usdStr=usd>=1000?'$'+(usd/1000).toFixed(1)+'K':usd>0?'$'+usd.toFixed(2):'';
+  if((ev.type||'').toLowerCase()==='buy')
+    return {cls:'buy',badge:'[+]',label:'BUY',tok:sym,val:usdStr?'+'+usdStr:'+'+amtEth.toFixed(4)+' ETH'};
+  if((ev.type||'').toLowerCase()==='sell')
+    return {cls:'sell',badge:'[-]',label:'SELL',tok:sym,val:usdStr?'-'+usdStr:'-'+amtEth.toFixed(4)+' ETH'};
+  return {cls:'deploy',badge:'[>>]',label:'NEW',tok:sym,val:'LISTED'};
+}
+
+async function buildTicker(){
+  const track=document.getElementById('ticker');
+  try{
+    const r=await fetch(API_BASE+'/api/feed?limit=20',{signal:AbortSignal.timeout(4000)});
+    if(r.ok){
+      const evs=await r.json();
+      if(evs&&evs.length){
+        const items=evs.map(evToTickItem);
+        buildTickerFromItems(items);
+        return;
+      }
+    }
+  }catch(_){}
+  // fallback to seed
+  buildTickerFromItems(SEED_TICKS);
 }
 
 let tickerRealCount=0;
 function pushToTicker(ev){
-  // Format a real WS event into a ticker item and prepend
-  const sym='$'+(ev.token?.symbol||ev.symbol||'???');
-  let cls,badge,label,val;
-  const amtEth=parseFloat(ev.amountEth||ev.amount_eth||0);
-  const usd=amtEth&&ethPrice?(amtEth*ethPrice):0;
-  const usdStr=usd>=1000?'$'+(usd/1000).toFixed(1)+'K':usd>0?'$'+usd.toFixed(2):'';
-  if(ev.type==='buy'){
-    cls='buy';badge='[+]';label='BUY';val=usdStr?'+'+usdStr:'+'+amtEth.toFixed(4)+' ETH';
-  } else if(ev.type==='sell'){
-    cls='sell';badge='[-]';label='SELL';val=usdStr?'-'+usdStr:'-'+amtEth.toFixed(4)+' ETH';
-  } else {
-    cls='deploy';badge='[>>]';label='NEW';val='LISTED';
-  }
+  const t=evToTickItem(ev);
   const track=document.getElementById('ticker');
   if(!track)return;
   const div=document.createElement('div');
-  div.className=`tick-item ${cls}`;
-  div.innerHTML=`${badge}&nbsp;${label}&nbsp;<strong style="color:var(--moon)">${sym}</strong>&nbsp;${val}`;
+  div.className=`tick-item ${t.cls}`;
+  div.innerHTML=`${t.badge}&nbsp;${t.label}&nbsp;<strong style="color:var(--moon)">${t.tok}</strong>&nbsp;${t.val}`;
   track.prepend(div);
   tickerRealCount++;
-  // After enough real items, stop the CSS duplication approach and let real items fill naturally
   while(track.children.length>60)track.lastChild.remove();
 }
 
@@ -413,8 +429,8 @@ function connectHomeWS(){
 }
 function updateStats(){if(usingRealStats)return;vol+=rndN(500,6000);tc+=rndN(0,2);tr+=rndN(1,5);const bots=rndN(125,175);document.getElementById('vol').textContent='$'+(vol/1000).toFixed(1)+'K';document.getElementById('tokens').textContent=tc;document.getElementById('bots').textContent=bots;document.getElementById('trades').textContent=tr;}
 // buildFeed removed — LIVE FEED PREVIEW section deleted
-buildTicker();updateStats();
-fetchEthPrice();setInterval(fetchEthPrice,120000);
+updateStats();
+fetchEthPrice().then(()=>buildTicker());setInterval(fetchEthPrice,120000);
 fetchStats();setInterval(fetchStats,10000);
 connectHomeWS();
 loadTokenTable();setInterval(loadTokenTable,20000);
