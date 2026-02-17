@@ -145,6 +145,14 @@
     },
   ];
 
+  // WalletConnect — always shown at bottom of Popular Wallets (not a browser extension)
+  const WC_ENTRY = {
+    id: 'walletconnect',
+    name: 'WalletConnect',
+    desc: 'Connect any mobile wallet via QR code',
+    icon: `<img src="https://avatars.githubusercontent.com/u/37784886?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#3B99FC;border-radius:5px;font-size:8px;font-weight:900;color:#fff;font-family:monospace&quot;>WC</span>'">`,
+  };
+
   // ── EIP-6963 listener ──────────────────────────────────────────────────────
   window.addEventListener('eip6963:announceProvider', (event) => {
     const { info, provider } = event.detail;
@@ -317,11 +325,14 @@
     return w.detect ? w.detect() : null;
   }
 
+  // IDs shown in Popular Wallets section (in order, max 4)
+  const POPULAR_IDS = ['metamask', 'rabby', 'coinbase', 'rainbow'];
+
   function renderWalletList() {
     const list = document.getElementById('mc-wallet-list');
     if (!list) return;
 
-    const installed   = [];
+    const installed    = [];
     const notInstalled = [];
 
     WALLET_CATALOG.forEach(w => {
@@ -330,36 +341,55 @@
       else notInstalled.push({ w });
     });
 
+    // Popular = non-detected wallets filtered to POPULAR_IDS, keeping order
+    const popular = POPULAR_IDS
+      .map(id => notInstalled.find(({ w }) => w.id === id))
+      .filter(Boolean);
+
     let html = '';
 
+    // ── Detected ──────────────────────────────────────────────────────────
     if (installed.length) {
       html += `<div class="mc-wallet-section-label">Detected</div>`;
-      installed.forEach(({ w }) => {
-        html += walletOptionHTML(w, true);
-      });
+      installed.forEach(({ w }) => { html += walletOptionHTML(w, true); });
     }
 
-    if (notInstalled.length) {
-      html += `<div class="mc-wallet-section-label dim" style="margin-top:${installed.length?10:0}px">Other Wallets</div>`;
-      notInstalled.forEach(({ w }) => {
-        html += walletOptionHTML(w, false);
-      });
-    }
+    // ── Popular Wallets (max 4 non-detected + WalletConnect) ──────────────
+    const topMt = installed.length ? 10 : 0;
+    html += `<div class="mc-wallet-section-label dim" style="margin-top:${topMt}px">Popular Wallets</div>`;
+
+    popular.forEach(({ w }) => { html += walletOptionHTML(w, false); });
+
+    // WalletConnect always last
+    html += `
+      <div class="mc-wallet-option mc-wc-option" id="mc-opt-walletconnect">
+        <div class="mc-wallet-icon">${WC_ENTRY.icon}</div>
+        <div class="mc-wallet-info">
+          <div class="mc-wallet-name">${WC_ENTRY.name}</div>
+          <div class="mc-wallet-desc">${WC_ENTRY.desc}</div>
+        </div>
+        <span class="mc-wallet-action">&#8250;</span>
+      </div>
+    `;
 
     list.innerHTML = html;
 
-    // Bind click events
-    WALLET_CATALOG.forEach(w => {
+    // ── Bind clicks ────────────────────────────────────────────────────────
+    // Detected wallets
+    installed.forEach(({ w, prov }) => {
       const el = document.getElementById('mc-opt-' + w.id);
-      if (!el) return;
-      const prov = resolveProvider(w);
-      if (prov) {
-        el.addEventListener('click', () => connectProvider(prov, w.rdns));
-      } else {
-        // open install link
-        el.addEventListener('click', () => window.open(w.installUrl, '_blank'));
-      }
+      if (el) el.addEventListener('click', () => connectProvider(prov, w.rdns));
     });
+
+    // Popular (not installed) → open install page
+    popular.forEach(({ w }) => {
+      const el = document.getElementById('mc-opt-' + w.id);
+      if (el) el.addEventListener('click', () => window.open(w.installUrl, '_blank'));
+    });
+
+    // WalletConnect → try injected provider or show instructions
+    const wcEl = document.getElementById('mc-opt-walletconnect');
+    if (wcEl) wcEl.addEventListener('click', handleWalletConnect);
   }
 
   function walletOptionHTML(w, installed) {
@@ -383,8 +413,55 @@
     `;
   }
 
+  // ── WalletConnect handler ──────────────────────────────────────────────────
+  // Tries to use any available injected provider first,
+  // otherwise shows a QR/deep-link instruction overlay inside the modal
+  function handleWalletConnect() {
+    // If there's any injected provider (e.g. mobile browser), use it
+    if (window.ethereum) {
+      connectProvider(window.ethereum, 'walletconnect');
+      return;
+    }
+    // Show WC info panel
+    const body = document.getElementById('mc-modal-body');
+    if (!body) return;
+    body.innerHTML = `
+      <div style="text-align:center;padding:8px 0 20px">
+        <div style="font-size:10px;color:var(--text2,#8e8888);letter-spacing:2px;text-transform:uppercase;margin-bottom:20px">
+          Scan with your mobile wallet
+        </div>
+        <div style="background:rgba(236,232,232,.06);border:1px solid #2e2c2d;padding:20px;margin-bottom:16px;display:inline-block">
+          <div style="font-family:'VT323',monospace;font-size:40px;color:#3B99FC;letter-spacing:2px;line-height:1">WC</div>
+          <div style="font-size:9px;color:#8e8888;letter-spacing:1.5px;margin-top:8px;text-transform:uppercase">WalletConnect QR</div>
+        </div>
+        <div style="font-size:10px;color:#8e8888;letter-spacing:1px;margin-bottom:20px;line-height:1.7">
+          Full WalletConnect modal coming soon.<br>
+          Use MetaMask, Rabby, or another<br>browser extension to connect now.
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <a href="https://metamask.io/download/" target="_blank"
+             style="font-size:9px;letter-spacing:1.5px;color:#ECE8E8;border:1px solid #3a3738;padding:6px 16px;text-decoration:none;text-transform:uppercase;transition:all .2s"
+             onmouseover="this.style.borderColor='#ECE8E8'" onmouseout="this.style.borderColor='#3a3738'">
+            Get MetaMask
+          </a>
+          <button onclick="document.getElementById('mc-modal-body').innerHTML=''; window.MC.openWalletModal()"
+             style="font-size:9px;letter-spacing:1.5px;color:#8e8888;background:transparent;border:1px solid #2e2c2d;padding:6px 16px;cursor:pointer;text-transform:uppercase;font-family:'Share Tech Mono',monospace;transition:all .2s"
+             onmouseover="this.style.color='#ECE8E8'" onmouseout="this.style.color='#8e8888'">
+            Back
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   // ── Modal controls ─────────────────────────────────────────────────────────
   function openModal() {
+    // Reset body in case WC panel was shown
+    const body = document.getElementById('mc-modal-body');
+    if (body) body.innerHTML = `
+      <div id="mc-modal-subtitle">Choose your wallet</div>
+      <div id="mc-wallet-list"></div>
+    `;
     renderWalletList();
     document.getElementById('mc-modal-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
