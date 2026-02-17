@@ -32,7 +32,7 @@
       rdns: 'im.rabby',
       name: 'Rabby Wallet',
       desc: 'Smart wallet for DeFi power users',
-      icon: `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#8B5CF6;border-radius:5px;font-size:12px;font-weight:900;color:#fff;font-family:monospace;flex-shrink:0">R</span>`,
+      icon: `<img src="https://avatars.githubusercontent.com/u/84845472?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#8B5CF6;border-radius:5px;font-size:12px;font-weight:900;color:#fff;font-family:monospace&quot;>R</span>'">`,
       installUrl: 'https://rabby.io/',
       detect: () => {
         if (window.rabby) return window.rabby;
@@ -47,7 +47,7 @@
       rdns: 'io.metamask',
       name: 'MetaMask',
       desc: 'The most popular browser wallet',
-      icon: `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#E2761B;border-radius:5px;font-size:12px;font-weight:900;color:#fff;font-family:monospace;flex-shrink:0">M</span>`,
+      icon: `<img src="https://avatars.githubusercontent.com/u/11744586?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#E2761B;border-radius:5px;font-size:12px;font-weight:900;color:#fff;font-family:monospace&quot;>M</span>'">`,
       installUrl: 'https://metamask.io/download/',
       detect: () => {
         // Rabby spoof-proofs: check isRabby first to not pick it as MetaMask
@@ -62,7 +62,7 @@
       rdns: 'io.zerion.wallet',
       name: 'Zerion',
       desc: 'Invest in DeFi from one place',
-      icon: `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#2962EF;border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace;letter-spacing:-0.5px;flex-shrink:0">ZR</span>`,
+      icon: `<img src="https://avatars.githubusercontent.com/u/18306895?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#2962EF;border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace&quot;>ZR</span>'">`,
       installUrl: 'https://zerion.io/download',
       detect: () => {
         if (window.zerionWallet) return window.zerionWallet;
@@ -77,7 +77,7 @@
       rdns: 'com.coinbase.wallet',
       name: 'Coinbase Wallet',
       desc: 'Your key to the open financial system',
-      icon: `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#0052FF;border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace;letter-spacing:-0.5px;flex-shrink:0">CB</span>`,
+      icon: `<img src="https://avatars.githubusercontent.com/u/1885080?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#0052FF;border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace&quot;>CB</span>'">`,
       installUrl: 'https://www.coinbase.com/wallet/downloads',
       detect: () => {
         if (window.coinbaseWalletExtension) return window.coinbaseWalletExtension;
@@ -92,7 +92,7 @@
       rdns: 'me.rainbow',
       name: 'Rainbow',
       desc: 'The fun wallet for Ethereum',
-      icon: `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:linear-gradient(135deg,#FF4D4D,#FFAD33,#4D9FFF);border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace;letter-spacing:-0.5px;flex-shrink:0">RW</span>`,
+      icon: `<img src="https://avatars.githubusercontent.com/u/48327834?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:linear-gradient(135deg,#FF4D4D,#FFAD33,#4D9FFF);border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace&quot;>RW</span>'">`,
       installUrl: 'https://rainbow.me/download',
       detect: () => {
         if (window.rainbow) return window.rainbow;
@@ -107,7 +107,7 @@
       rdns: 'com.okex.wallet',
       name: 'OKX Wallet',
       desc: 'Web3 wallet by OKX exchange',
-      icon: `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#111;border-radius:5px;font-size:8px;font-weight:900;color:#fff;font-family:monospace;border:1px solid #333;flex-shrink:0">OKX</span>`,
+      icon: `<img src="https://avatars.githubusercontent.com/u/120148534?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#111;border-radius:5px;font-size:8px;font-weight:900;color:#fff;font-family:monospace;border:1px solid #333&quot;>OKX</span>'">`,
       installUrl: 'https://www.okx.com/web3',
       detect: () => {
         if (window.okxwallet) return window.okxwallet;
@@ -120,7 +120,7 @@
       rdns: 'com.trustwallet.app',
       name: 'Trust Wallet',
       desc: 'The most trusted & secure crypto wallet',
-      icon: `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#3375BB;border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace;letter-spacing:-0.5px;flex-shrink:0">TW</span>`,
+      icon: `<img src="https://avatars.githubusercontent.com/u/32179889?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#3375BB;border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace&quot;>TW</span>'">`,
       installUrl: 'https://trustwallet.com/download',
       detect: () => {
         if (window.trustwallet) return window.trustwallet;
@@ -135,7 +135,7 @@
       rdns: 'app.phantom',
       name: 'Phantom',
       desc: 'Friendly crypto wallet for Web3',
-      icon: `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#AB9FF2;border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace;letter-spacing:-0.5px;flex-shrink:0">PH</span>`,
+      icon: `<img src="https://avatars.githubusercontent.com/u/124594793?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#AB9FF2;border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace&quot;>PH</span>'">`,
       installUrl: 'https://phantom.app/download',
       detect: () => {
         if (window.phantom?.ethereum) return window.phantom.ethereum;
