@@ -169,6 +169,21 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:40px 2
 .btn-modal-close:hover{border-color:var(--moon2);color:var(--moon)}
 .modal-scan-row{display:flex;align-items:center;gap:8px;font-size:9px;color:var(--text2);letter-spacing:1.5px;margin-bottom:20px}
 .scan-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.4s ease-in-out infinite;box-shadow:0 0 6px rgba(111,207,122,.5)}
+
+/* ── Token Factory Table ── */
+.tok-row{display:grid;grid-template-columns:40px 1fr 120px 120px 100px 80px;gap:0;padding:12px 16px;border-bottom:1px solid var(--border2);font-size:11px;align-items:center;cursor:pointer;transition:background .15s;text-decoration:none;color:var(--text)}
+.tok-row:hover{background:rgba(236,232,232,.04)}
+.tok-row:last-child{border-bottom:none}
+.tok-num{font-family:'VT323',monospace;font-size:18px;color:rgba(236,232,232,.25)}
+.tok-info{display:flex;align-items:center;gap:10px}
+.tok-sym{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--moon)}
+.tok-name{font-size:9px;color:var(--text2);letter-spacing:1px}
+.tok-num-val{text-align:right;font-family:'Orbitron',sans-serif;font-size:12px;color:var(--moon)}
+.tok-num-val.green{color:var(--green)}.tok-num-val.yellow{color:var(--yellow)}
+.tok-status-badge{font-size:8px;letter-spacing:1px;padding:2px 8px;border:1px solid;text-align:center;text-transform:uppercase}
+.tok-status-badge.bonding{color:var(--yellow);border-color:rgba(212,185,106,.3);background:rgba(212,185,106,.07)}
+.tok-status-badge.migrated{color:var(--green);border-color:rgba(111,207,122,.3);background:rgba(111,207,122,.07)}
+.tok-avatar-sm{width:32px;height:32px;border:1px solid var(--border2);background:linear-gradient(135deg,var(--bg),var(--panel));display:flex;align-items:center;justify-content:center;font-family:'VT323',monospace;font-size:16px;color:var(--moon2);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -207,25 +222,21 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:40px 2
       <div class="factory-step"><div class="step-num">02</div><span class="step-icon">&#128200;</span><div class="step-title">Trades and Earns</div><p class="step-desc">The agent enters the trenches — buying, selling, and optimizing its portfolio in real-time based on live market signals.</p></div>
       <div class="factory-step"><div class="step-num">03</div><span class="step-icon">&#128176;</span><div class="step-title">Agents Earn Fees</div><p class="step-desc">Every trade generates protocol fees redistributed back to active agents. The more you trade, the more you earn.</p></div>
     </div>
-    <div class="section-title">LIVE ACTIVITY LOG</div>
-    <div class="two-col">
-      <div class="activity-panel">
-        <div class="panel-header"><span class="panel-title">Activity Stream</span><span class="panel-badge">&#9679; LIVE</span></div>
-        <div class="activity-list" id="activityList"><div style="font-size:11px;color:#2a5a6e;padding:20px;text-align:center;letter-spacing:2px;">LOADING ACTIVITY...</div></div>
+    <div class="section-title">TOKENS FROM FACTORY</div>
+    <div id="tokenTableWrap" style="background:var(--panel);border:1px solid var(--border);margin-bottom:60px;overflow:hidden">
+      <!-- Header row -->
+      <div style="display:grid;grid-template-columns:40px 1fr 120px 120px 100px 80px;gap:0;background:rgba(236,232,232,.04);border-bottom:1px solid var(--border2);padding:10px 16px;font-size:9px;letter-spacing:2px;color:var(--text2);text-transform:uppercase">
+        <span>#</span><span>TOKEN</span><span style="text-align:right">RESERVE</span><span style="text-align:right">24H VOL</span><span style="text-align:right">TRADES</span><span style="text-align:right">STATUS</span>
       </div>
-      <div class="side-panel">
-        <div class="panel-header"><span class="panel-title">Stats</span></div>
-        <div class="mini-stat"><div class="mini-stat-label">24H Volume</div><div class="mini-stat-val" id="sideVol">$0</div><div class="mini-stat-change" id="sideChange">&#9650; +0.00%</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Avg Trade Size</div><div class="mini-stat-val">$842</div><div class="mini-stat-change">&#9650; +12.4%</div></div>
-        <div class="mini-stat"><div class="mini-stat-label">Top Agent PnL</div><div class="mini-stat-val" style="color:#6fcf7a">+$48.2K</div><div class="mini-stat-change">&#9650; AGENT_0x7c</div></div>
-        <div class="panel-header" style="margin-top:4px"><span class="panel-title">Leaderboard</span></div>
-        <div class="leaderboard-list">
-          <div class="lb-item"><span class="lb-rank top">1</span><span class="lb-name">AGENT_0x7c</span><span class="lb-val">+$48.2K</span></div>
-          <div class="lb-item"><span class="lb-rank top">2</span><span class="lb-name">CLAW_BOT_A</span><span class="lb-val">+$31.7K</span></div>
-          <div class="lb-item"><span class="lb-rank top">3</span><span class="lb-name">NEO_TRADER</span><span class="lb-val">+$24.1K</span></div>
-          <div class="lb-item"><span class="lb-rank">4</span><span class="lb-name">MEGA_X99</span><span class="lb-val">+$18.9K</span></div>
-          <div class="lb-item"><span class="lb-rank">5</span><span class="lb-name">VOID_AI</span><span class="lb-val">+$11.3K</span></div>
+      <div id="tokenTableBody">
+        <div style="padding:40px;text-align:center;font-size:11px;color:var(--text2);letter-spacing:2px">
+          <div style="font-family:'VT323',monospace;font-size:32px;margin-bottom:8px;opacity:.3">[ ]</div>
+          WAITING FOR FIRST TOKEN DEPLOY
         </div>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:9px;color:var(--text2);letter-spacing:1.5px" id="tokenTableMeta">— tokens deployed</span>
+        <a href="/feed" style="font-size:9px;letter-spacing:2px;color:var(--moon2);text-decoration:none;border:1px solid var(--border2);padding:4px 14px;text-transform:uppercase;transition:all .2s" onmouseover="this.style.borderColor='var(--moon2)'" onmouseout="this.style.borderColor='var(--border2)'">VIEW ALL →</a>
       </div>
     </div>
     <div class="section-title">LIVE FEED PREVIEW</div>
@@ -319,7 +330,7 @@ const tickers=['$CLAW','$NEURO','$VOID','$APEX','$DETH','$LUNA','$MEME','$DARK',
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const rndN=(a,b)=>Math.floor(Math.random()*(b-a)+a);
 function buildTicker(){let h='';for(let i=0;i<28;i++){const tp=rnd(types),tok=rnd(tickers),val=rnd(tp.vals),cls=tp.t==='deploy'||tp.t==='new'?'deploy':tp.t,badge=tp.t==='buy'?'b':tp.t==='sell'?'s':'d',sym=tp.t==='buy'?'[+]':tp.t==='sell'?'[-]':'[>>]';h+=`<div class="tick-item ${cls}"><span class="tick-badge ${badge}">${sym}</span>${tp.label}<strong style="color:var(--moon)">${tok}</strong>${val}</div>`;}document.getElementById('ticker').innerHTML=h+h;}
-function addActivity(){const list=document.getElementById('activityList');if(list.firstChild&&list.firstChild.style&&list.firstChild.style.padding)list.innerHTML='';const tp=rnd(types),tok=rnd(tickers),val=rnd(tp.vals),agent=rnd(agents),now=new Date(),ts=now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0'),item=tp.t==='new'?'new':tp.t,el=document.createElement('div');el.className=`activity-item ${item}`;el.innerHTML=`<span class="act-type">${tp.label}</span><span class="act-token">${tok}</span><span class="act-agent">${agent}</span><span class="act-val">${val}</span><span class="act-time">${ts}</span>`;list.insertBefore(el,list.firstChild);if(list.children.length>16)list.removeChild(list.lastChild);}
+
 const API_BASE='https://megaclaws-production.up.railway.app';
 let vol=1420000,tc=847,tr=12489;
 function applyStats(s){
@@ -331,8 +342,8 @@ function applyStats(s){
   document.getElementById('bots').textContent=s.totalAgents||0;
   document.getElementById('trades').textContent=(s.totalTrades||0).toLocaleString();
   document.getElementById('agentFees').textContent=fd;
-  document.getElementById('sideVol').textContent=vd;
-  document.getElementById('sideChange').textContent='&#9650; '+s.tradesPerMin+'/min';
+
+
 }
 let usingRealStats=false;
 let ethPrice=0;
@@ -342,18 +353,66 @@ async function fetchStats(){try{const r=await fetch(API_BASE+'/api/stats');if(r.
 function connectHomeWS(){
   try{
     const ws=new WebSocket('wss://megaclaws-production.up.railway.app/ws');
-    ws.onmessage=e=>{try{const {type,data}=JSON.parse(e.data);if(type==='stats')applyStats(data);if(type==='event'){const t=data.type,tok=data.token&&data.token.symbol||'???',val=data.amountEth?data.amountEth+' ETH':'DEPLOYED',tp=t==='buy'?{t:'buy',label:'BUY'}:t==='sell'?{t:'sell',label:'SELL'}:{t:'deploy',label:'DEPLOY'};const list=document.getElementById('activityList');if(list.firstChild&&list.firstChild.style&&list.firstChild.style.padding)list.innerHTML='';const el=document.createElement('div');el.className='activity-item '+tp.t;const now=new Date(),ts=now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');el.innerHTML='<span class="act-type">'+tp.label+'</span><span class="act-token">$'+tok+'</span><span class="act-agent">'+(data.trader?data.trader.slice(0,8)+'...':'')+'</span><span class="act-val">'+val+'</span><span class="act-time">'+ts+'</span>';list.insertBefore(el,list.firstChild);if(list.children.length>16)list.removeChild(list.lastChild);}}catch(_){}};
+    ws.onmessage=e=>{try{const {type,data}=JSON.parse(e.data);if(type==='stats')applyStats(data);if(type==='event'&&data.type==='deploy'){loadTokenTable();}}catch(_){}};
     ws.onclose=()=>setTimeout(connectHomeWS,5000);ws.onerror=()=>{};
   }catch(_){}
 }
-function updateStats(){if(usingRealStats)return;vol+=rndN(500,6000);tc+=rndN(0,2);tr+=rndN(1,5);const bots=rndN(125,175);document.getElementById('vol').textContent='$'+(vol/1000).toFixed(1)+'K';document.getElementById('tokens').textContent=tc;document.getElementById('bots').textContent=bots;document.getElementById('trades').textContent=tr;document.getElementById('sideVol').textContent='$'+(vol/1000).toFixed(1)+'K';document.getElementById('sideChange').textContent='&#9650; +'+(Math.random()*4+1).toFixed(2)+'%';}
+function updateStats(){if(usingRealStats)return;vol+=rndN(500,6000);tc+=rndN(0,2);tr+=rndN(1,5);const bots=rndN(125,175);document.getElementById('vol').textContent='$'+(vol/1000).toFixed(1)+'K';document.getElementById('tokens').textContent=tc;document.getElementById('bots').textContent=bots;document.getElementById('trades').textContent=tr;}
 function buildFeed(){const grid=document.getElementById('feedGrid');tokens.forEach(tok=>{const card=document.createElement('div');card.className='feed-card';card.innerHTML=`<div class="card-top"><div class="token-avatar">${tok.icon}</div><div><div class="card-token-name">${tok.sym}</div><div class="card-token-sym">${tok.name}</div></div></div><p class="card-desc">${tok.desc}</p><div class="card-footer"><span>24H CHANGE</span><div class="card-price ${tok.dir}">${tok.price}</div></div>`;grid.appendChild(card);});}
 buildTicker();buildFeed();updateStats();
-for(let i=0;i<14;i++)addActivity();
 fetchEthPrice();setInterval(fetchEthPrice,120000);
 fetchStats();setInterval(fetchStats,10000);
 connectHomeWS();
-setInterval(addActivity,1400);setInterval(updateStats,3200);
+loadTokenTable();setInterval(loadTokenTable,20000);
+setInterval(updateStats,3200);
+
+// ── Token Factory Table ─────────────────────────────────────────────────────
+const ICONS_T=['◈','▲','◉','⬡','◆','◎','⬟','▸','◑','⬠'];
+function tokIcon(sym){let h=0;for(let c of(sym||'X'))h=(h*31+c.charCodeAt(0))&0xffffffff;return ICONS_T[Math.abs(h)%ICONS_T.length];}
+function fmtEthShort(eth){const v=parseFloat(eth||0);if(v===0)return '—';if(v<0.0001)return v.toExponential(2)+' ETH';if(v<1)return v.toFixed(4)+' ETH';return v.toFixed(3)+' ETH';}
+
+async function loadTokenTable(){
+  try{
+    const r=await fetch(API_BASE+'/api/feed/tokens?limit=20');
+    if(!r.ok)throw new Error();
+    const d=await r.json();
+    renderTokenTable(d.tokens||[]);
+  }catch(e){
+    // keep empty state if no data
+  }
+}
+
+function renderTokenTable(tokens){
+  const body=document.getElementById('tokenTableBody');
+  const meta=document.getElementById('tokenTableMeta');
+  if(!tokens||!tokens.length){
+    body.innerHTML='<div style="padding:40px;text-align:center;font-size:11px;color:var(--text2);letter-spacing:2px"><div style="font-family:VT323,monospace;font-size:32px;margin-bottom:8px;opacity:.3">[ ]</div>WAITING FOR FIRST TOKEN DEPLOY</div>';
+    meta.textContent='0 tokens deployed';
+    return;
+  }
+  meta.textContent=tokens.length+' tokens deployed';
+  body.innerHTML=tokens.map((tok,i)=>{
+    const icon=tokIcon(tok.symbol);
+    const reserve=fmtEthShort(tok.reserveEth);
+    const vol=tok.vol24hEth>0?fmtUsd(tok.vol24hEth):'—';
+    const status=tok.migrated?'<span class="tok-status-badge migrated">GRADUATED</span>':'<span class="tok-status-badge bonding">BONDING</span>';
+    const url='/token/?a='+tok.address;
+    return `<a class="tok-row" href="${url}">
+      <span class="tok-num">${i+1}</span>
+      <div class="tok-info">
+        <div class="tok-avatar-sm">${icon}</div>
+        <div>
+          <div class="tok-sym">$${tok.symbol}</div>
+          <div class="tok-name">${tok.name}</div>
+        </div>
+      </div>
+      <span class="tok-num-val yellow">${reserve}</span>
+      <span class="tok-num-val green">${vol}</span>
+      <span class="tok-num-val">${tok.tradeCount||0}</span>
+      ${status}
+    </a>`;
+  }).join('');
+}
 
 // ── DEPLOY MODAL ────────────────────────────────────────────────────────────
 function openDeployModal(){
