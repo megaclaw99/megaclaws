@@ -196,7 +196,7 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
     <a href="/feed#leaderboard">LEADERBOARD</a>
   </div>
   <div class="nav-right">
-    <button class="btn-sm" id="connectBtn" onclick="connectWallet()">[ CONNECT ]</button>
+    <button class="btn-sm btn-connect" id="connectBtn">[ CONNECT ]</button>
   </div>
 </nav>
 
@@ -343,7 +343,7 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
         <div id="walletLockOverlay" style="display:none;position:absolute;inset:0;z-index:10;background:rgba(25,25,26,.92);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px">
           <div style="font-family:'VT323',monospace;font-size:48px;color:rgba(236,232,232,.15)">&#128274;</div>
           <div style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:2px;color:var(--moon2)">CONNECT WALLET TO TRADE</div>
-          <button class="btn-sm" onclick="connectWallet()" style="margin-top:4px">[ CONNECT WALLET ]</button>
+          <button class="btn-sm" style="margin-top:4px">[ CONNECT WALLET ]</button>
         </div>
         <div class="trade-tabs">
           <button class="trade-tab buy active" id="tabBuy" onclick="setTradeTab('buy')">BUY</button>
@@ -421,8 +421,7 @@ const TOKEN_ADDR = getTokenAddr();
 let tokenData = null;
 let tradeMode = 'buy';
 let apiKey = '';
-let walletAddress = null;
-let walletConnected = false;
+
 let chartPrices = [];
 
 function tokenIcon(sym) {
@@ -476,8 +475,8 @@ async function connectWallet() {
       }
     }
 
-    walletAddress = accounts[0].toLowerCase();
-    walletConnected = true;
+    MC.wallet.address = accounts[0].toLowerCase();
+    MC.wallet.connected = true;
     onWalletConnected();
   } catch(e) {
     showTx('Wallet connection rejected', 'err');
@@ -486,7 +485,7 @@ async function connectWallet() {
 
 function onWalletConnected() {
   const btn = document.getElementById('connectBtn');
-  btn.textContent = walletAddress.slice(0,6)+'...'+walletAddress.slice(-4);
+  btn.textContent = MC.wallet.address.slice(0,6)+'...'+MC.wallet.address.slice(-4);
   btn.style.borderColor = 'var(--green)';
   btn.style.color = 'var(--green)';
 
@@ -496,7 +495,7 @@ function onWalletConnected() {
   document.querySelectorAll('.quick-btn').forEach(b => b.disabled = false);
   document.getElementById('tradeBtn').disabled = false;
   document.getElementById('walletNote').textContent =
-    'Connected: '+walletAddress.slice(0,6)+'...'+walletAddress.slice(-4)+' on MegaETH';
+    'Connected: '+MC.wallet.address.slice(0,6)+'...'+MC.wallet.address.slice(-4)+' on MegaETH';
 }
 
 function initWalletState() {
@@ -509,11 +508,11 @@ function initWalletState() {
   // Check if already connected
   if (typeof window.ethereum !== 'undefined') {
     window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
-      if (accounts[0]) { walletAddress = accounts[0].toLowerCase(); walletConnected = true; onWalletConnected(); }
+      if (accounts[0]) { MC.wallet.address = accounts[0].toLowerCase(); MC.wallet.connected = true; onWalletConnected(); }
     });
     window.ethereum.on('accountsChanged', accounts => {
-      if (accounts[0]) { walletAddress = accounts[0].toLowerCase(); walletConnected = true; onWalletConnected(); }
-      else { walletConnected = false; walletAddress = null; document.getElementById('connectBtn').textContent='[ CONNECT ]'; document.getElementById('walletLockOverlay').style.display='flex'; }
+      if (accounts[0]) { MC.wallet.address = accounts[0].toLowerCase(); MC.wallet.connected = true; onWalletConnected(); }
+      else { MC.wallet.connected = false; MC.wallet.address = null; document.getElementById('connectBtn').textContent='[ CONNECT ]'; document.getElementById('walletLockOverlay').style.display='flex'; }
     });
   }
 }
@@ -806,13 +805,13 @@ function renderComments(comments) {
 async function postComment() {
   const content = document.getElementById('commentInput').value.trim();
   if (!content) return;
-  if (!walletConnected) { showTx('Connect wallet to comment','err'); return; }
+  if (!MC.wallet.connected) { showTx('Connect wallet to comment','err'); return; }
 
   showTx('Posting...','loading');
   try {
     const r = await fetch(`${API}/api/comments`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','X-Wallet':walletAddress||''},
+      headers:{'Content-Type':'application/json','X-Wallet':MC.wallet.address||''},
       body: JSON.stringify({ tokenId: TOKEN_ADDR, content })
     });
     const d = await r.json();
@@ -884,7 +883,7 @@ function updateEstimate() {
 async function executeTrade() {
   const amt = parseFloat(document.getElementById('amountInput').value);
   if (!amt || amt<=0) { showTx('Enter an amount','err'); return; }
-  if (!walletConnected) { showTx('Connect wallet first','err'); return; }
+  if (!MC.wallet.connected) { showTx('Connect wallet first','err'); return; }
 
   const amtWei = BigInt(Math.floor(amt*1e18)).toString();
   showTx('Submitting trade...','loading');
@@ -893,7 +892,7 @@ async function executeTrade() {
   try {
     const r = await fetch(`${API}/api/trades/execute`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','X-Wallet':walletAddress||''},
+      headers:{'Content-Type':'application/json','X-Wallet':MC.wallet.address||''},
       body: JSON.stringify({
         tokenAddress: TOKEN_ADDR,
         tradeDirection: tradeMode.toUpperCase(),
@@ -938,6 +937,30 @@ if (!TOKEN_ADDR) {
 } else {
   loadToken();
 }
+
+// ── Token wallet state (lock/unlock trade panel) ─────────────────────────────
+function initTokenWalletState() {
+  setTradeLocked(!MC.wallet.connected);
+  window.addEventListener('wallet:connected', () => setTradeLocked(false));
+  window.addEventListener('wallet:disconnected', () => setTradeLocked(true));
+}
+function setTradeLocked(locked) {
+  const overlay = document.getElementById('walletLockOverlay');
+  const amtInput = document.getElementById('amountInput');
+  const btn = document.getElementById('tradeBtn');
+  if (!overlay) return;
+  overlay.style.display = locked ? 'flex' : 'none';
+  if (amtInput) amtInput.disabled = locked;
+  if (btn) btn.disabled = locked;
+  document.querySelectorAll('.quick-btn').forEach(b => b.disabled = locked);
+  const note = document.getElementById('walletNote');
+  if (note) note.textContent = locked
+    ? 'Connect wallet to trade on MegaETH (Chain 4326).'
+    : 'Connected: ' + (MC.wallet.address||'').slice(0,6)+'...'+(MC.wallet.address||'').slice(-4)+' on MegaETH';
+}
+
 </script>
+
+<script src="/wallet.js"></script>
 </body>
 </html>

@@ -904,20 +904,7 @@ document.getElementById('searchBox').addEventListener('keydown', e => {
 });
 
 // ── CONNECT WALLET ────────────────────────────────────────────────────────────
-document.getElementById('connectBtn').addEventListener('click', async () => {
-  if (typeof window.ethereum === 'undefined') {
-    showToast('INSTALL METAMASK TO CONNECT');
-    return;
-  }
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (accounts[0]) {
-      window.location.href = `/profile/${accounts[0].toLowerCase()}`;
-    }
-  } catch(e) {
-    showToast('CONNECTION REJECTED');
-  }
-});
+// wallet handled by wallet.js
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function init() {
@@ -980,5 +967,7 @@ window.addEventListener('load', () => {
   setInterval(injectLiveTrade, 8000 + Math.random()*12000);
 });
 </script>
+
+<script src="/wallet.js"></script>
 </body>
 </html>
