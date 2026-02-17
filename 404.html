@@ -1,17 +1,36 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+<title>MegaClaw.io</title>
 <script>
-// GitHub Pages SPA routing trick
-// Redirect /token/0x... → /token/?a=0x...
-const path = window.location.pathname;
-const segments = path.replace(/^\//, '').split('/');
-if (segments[0] === 'token' && segments[1]) {
-  window.location.replace('/token/?a=' + segments[1]);
+// GitHub Pages SPA redirect trick
+// Saves path, query, hash to sessionStorage then redirects to root
+// Root (index.html) or the relevant page picks it up and navigates correctly
+var l = window.location;
+var path = l.pathname;
+
+// Route /profile/0x... → /profile/?address=0x...
+var profileMatch = path.match(/\/profile\/(0x[0-9a-fA-F]{40})/i);
+if (profileMatch) {
+  sessionStorage.setItem('spa_redirect', JSON.stringify({
+    path: path, query: l.search, hash: l.hash
+  }));
+  l.replace(l.protocol + '//' + l.host + '/profile/?address=' + profileMatch[1].toLowerCase());
 } else {
-  window.location.replace('/?404=' + encodeURIComponent(path));
+  // General SPA redirect
+  sessionStorage.setItem('spa_redirect', JSON.stringify({
+    path: path, query: l.search, hash: l.hash
+  }));
+  l.replace(l.protocol + '//' + l.host + '/?p=' + encodeURIComponent(path) + (l.search ? '&' + l.search.slice(1) : ''));
 }
 </script>
 </head>
-<body></body>
+<body>
+<style>
+body{background:#19191A;color:#ECE8E8;font-family:'Share Tech Mono',monospace;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+.msg{text-align:center;font-size:14px;letter-spacing:2px;color:#8e8888}
+</style>
+<div class="msg">ROUTING...</div>
+</body>
 </html>
