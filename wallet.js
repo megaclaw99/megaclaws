@@ -62,7 +62,7 @@
       rdns: 'io.zerion.wallet',
       name: 'Zerion',
       desc: 'Invest in DeFi from one place',
-      icon: `<img src="https://avatars.githubusercontent.com/u/18306895?s=64&v=4" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#2962EF;border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace&quot;>ZR</span>'">`,
+      icon: `<img src="https://cdn.jsdelivr.net/gh/zeriontech/zerion-wallet-extension@main/src/ui/assets/zerion-logo.svg" width="24" height="24" style="border-radius:5px;object-fit:cover" onerror="this.outerHTML='<span style=&quot;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#2962EF;border-radius:5px;font-size:9px;font-weight:900;color:#fff;font-family:monospace&quot;>ZR</span>'">`,
       installUrl: 'https://zerion.io/download',
       detect: () => {
         if (window.zerionWallet) return window.zerionWallet;
