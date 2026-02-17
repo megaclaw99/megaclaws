@@ -189,6 +189,34 @@ main{position:relative;z-index:1;padding-top:100px;padding-bottom:60px}
 .tooltip{position:relative;cursor:default}
 .tooltip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);color:var(--text2);font-size:9px;letter-spacing:1px;padding:4px 10px;white-space:nowrap;z-index:100}
 
+/* ── ACCOUNT TYPE BANNER ── */
+.acct-banner{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--border2);margin-bottom:12px;background:rgba(236,232,232,.025)}
+.acct-banner.agent{border-color:rgba(111,207,122,.25);background:rgba(111,207,122,.04)}
+.acct-banner.non-agent{border-color:rgba(106,184,212,.2);background:rgba(106,184,212,.03)}
+.acct-banner-badge{font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;padding:3px 10px;border:1px solid;text-transform:uppercase;white-space:nowrap;margin-top:1px}
+.acct-banner.agent .acct-banner-badge{color:var(--green);border-color:var(--green);background:rgba(111,207,122,.1)}
+.acct-banner.non-agent .acct-banner-badge{color:var(--blue);border-color:var(--blue);background:rgba(106,184,212,.1)}
+.acct-banner-text{font-size:10px;color:var(--text2);line-height:1.7;letter-spacing:.5px}
+.acct-banner-text strong{color:var(--moon2);font-weight:normal}
+
+/* ── CREATED TOKENS TABLE ── */
+.ct-table{width:100%;border-collapse:collapse;font-size:10px}
+.ct-table th{font-size:8px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border2);text-align:left;font-weight:normal}
+.ct-table th:last-child,.ct-table td:last-child{text-align:right}
+.ct-table td{padding:10px 10px;border-bottom:1px solid rgba(46,44,45,.6);vertical-align:middle;color:var(--text2)}
+.ct-table tr:last-child td{border-bottom:none}
+.ct-table tbody tr{transition:background .15s;cursor:pointer}
+.ct-table tbody tr:hover{background:rgba(236,232,232,.04)}
+.ct-sym{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--moon);letter-spacing:.5px}
+.ct-name{font-size:9px;color:var(--text2);margin-top:2px;letter-spacing:.5px}
+.ct-addr{font-size:9px;color:var(--text2);font-family:'Share Tech Mono',monospace;letter-spacing:.5px}
+.ct-vol{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:600;color:var(--moon3)}
+.ct-reserve{font-size:10px;color:var(--text2)}
+.ct-status{font-size:8px;letter-spacing:1px;padding:2px 8px;border:1px solid;text-transform:uppercase;white-space:nowrap}
+.ct-status.bonding{color:var(--yellow);border-color:rgba(212,185,106,.3);background:rgba(212,185,106,.07)}
+.ct-status.graduated{color:var(--green);border-color:rgba(111,207,122,.3);background:rgba(111,207,122,.07)}
+.ct-pulse{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.4s infinite;margin-right:5px;vertical-align:middle;box-shadow:0 0 4px rgba(111,207,122,.6)}
+
 /* ── FOOTER ── */
 footer{border-top:1px solid var(--border);background:var(--panel);padding:32px 24px 20px;text-align:center;position:relative;z-index:1;margin-top:60px}
 .footer-logo{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--moon);text-shadow:var(--glow);letter-spacing:4px;margin-bottom:6px}
@@ -271,7 +299,8 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:32px 2
         <span class="tag registered">REGISTERED</span>
         <span class="tag active">ACTIVE</span>
       </div>
-      <div class="profile-bio" id="profileBio">AI agent operating on MegaETH — deploying bonding curve tokens and executing automated trades via the MegaClaw factory protocol.</div>
+      <div id="acctBanner" class="acct-banner" style="display:none"></div>
+      <div class="profile-bio" id="profileBio" style="display:none"></div>
       <div class="profile-links">
         <a href="#" class="profile-link explorer" id="explorerLink" target="_blank">[ EXPLORER ]</a>
         <a href="#" class="profile-link" id="twitterLink" target="_blank" style="display:none">[ TWITTER ]</a>
@@ -424,16 +453,16 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:32px 2
         </div>
       </div>
 
-      <!-- DEPLOYED TOKENS -->
-      <div class="panel">
+      <!-- CREATED TOKENS TABLE -->
+      <div class="panel" id="createdTokensPanel">
         <div class="panel-header">
-          <span class="panel-title">Deployed Tokens</span>
-          <span class="panel-badge" id="deployedCount">0</span>
+          <span class="panel-title">Created Tokens</span>
+          <span class="panel-badge live" id="deployedCount"><span class="ct-pulse"></span><span id="deployedCountNum">0</span></span>
         </div>
-        <div class="token-list" id="deployedList">
+        <div id="createdTokensWrap">
           <div class="empty-state">
             <div class="empty-icon">[ ]</div>
-            <div class="empty-msg">No tokens deployed</div>
+            <div class="empty-msg">No deployed tokens found for this wallet yet.</div>
           </div>
         </div>
       </div>
@@ -650,29 +679,80 @@ function renderProfile(data) {
 }
 
 // ── DEPLOYED TOKENS ──────────────────────────────────────────────────────────
-function renderDeployedTokens(tokens) {
-  const el = document.getElementById('deployedList');
-  const countEl = document.getElementById('deployedCount');
-  countEl.textContent = tokens.length;
+// ── CREATED TOKENS TABLE ─────────────────────────────────────────────────────
+function renderCreatedTokens(tokens) {
+  const wrap     = document.getElementById('createdTokensWrap');
+  const countNum = document.getElementById('deployedCountNum');
+  if (countNum) countNum.textContent = tokens.length;
+
   if (!tokens.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">[ ]</div><div class="empty-msg">No tokens deployed</div></div>`;
+    wrap.innerHTML = `
+      <div class="empty-state" style="padding:32px 20px">
+        <div class="empty-icon">[ ]</div>
+        <div class="empty-msg">No deployed tokens found for this wallet yet.</div>
+      </div>`;
     return;
   }
-  el.innerHTML = tokens.map(t => `
-    <a class="token-item" href="${EXPLORER}/address/${t.addr}" target="_blank">
-      <div class="tok-avatar">${t.emoji || t.sym.slice(0,1)}</div>
-      <div class="tok-info">
-        <div class="tok-name">${t.name}</div>
-        <div class="tok-sym">${t.sym} &nbsp;
-          <span class="tok-badge ${t.migrated?'migrated':''}">${t.migrated?'GRADUATED':'BONDING'}</span>
-        </div>
-      </div>
-      <div class="tok-stats">
-        <div class="tok-price ${parseFloat(t.change)>=0?'up':'down'}">${parseFloat(t.change)>=0?'+':''}${t.change}%</div>
-        <div class="tok-vol">${t.vol} ETH</div>
-      </div>
-    </a>
-  `).join('');
+
+  wrap.innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="ct-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Address</th>
+            <th>24h Vol</th>
+            <th>Reserve</th>
+            <th>Trades</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="ctTableBody">
+          ${tokens.map(t => ctRowHTML(t)).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  // Bind row clicks
+  tokens.forEach(t => {
+    const row = document.getElementById('ct-row-' + (t.address||t.addr));
+    if (row) row.addEventListener('click', () => {
+      window.open(`${EXPLORER}/address/${t.address||t.addr}`, '_blank');
+    });
+  });
+}
+
+function ctRowHTML(t) {
+  const addr     = t.address || t.addr || '';
+  const sym      = t.symbol  || t.sym  || '???';
+  const name     = t.name    || sym;
+  const vol24h   = fmtUsd(t.vol24hEth || t.vol || 0);
+  const reserve  = parseFloat(t.reserveEth || 0).toFixed(4);
+  const trades   = t.tradeCount || t.trades || 0;
+  const migrated = t.migrated;
+  const created  = t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '--';
+
+  return `
+    <tr id="ct-row-${addr}" title="Deployed ${created}">
+      <td>
+        <div class="ct-sym">$${sym}</div>
+        <div class="ct-name">${name}</div>
+      </td>
+      <td><span class="ct-addr">${shortAddr(addr)}</span></td>
+      <td><span class="ct-vol">${vol24h}</span></td>
+      <td><span class="ct-reserve">${reserve} ETH</span></td>
+      <td style="color:var(--moon2)">${trades}</td>
+      <td>
+        <span class="ct-status ${migrated?'graduated':'bonding'}">
+          ${migrated ? 'GRADUATED' : 'BONDING'}
+        </span>
+      </td>
+    </tr>`;
+}
+
+// keep old name as alias (called from init)
+function renderDeployedTokens(tokens) {
+  renderCreatedTokens(tokens);
 }
 
 // ── HOLDINGS ─────────────────────────────────────────────────────────────────
@@ -902,12 +982,48 @@ async function fetchDeployedTokens() {
   return res.json();
 }
 
+// ── ACCOUNT TYPE BANNER ───────────────────────────────────────────────────────
+function renderAccountBanner(profile) {
+  const banner = document.getElementById('acctBanner');
+  const bio    = document.getElementById('profileBio');
+  if (!banner) return;
+
+  if (profile.registered) {
+    // Agent account
+    banner.className = 'acct-banner agent';
+    banner.innerHTML = `
+      <span class="acct-banner-badge">Agent Account</span>
+      <span class="acct-banner-text">
+        <strong>${profile.name || shortAddr(profile.address)}</strong> is a registered MegaClaw agent operating autonomously on MegaETH &mdash; deploying bonding curve tokens and executing trades via the factory protocol.
+      </span>`;
+    banner.style.display = 'flex';
+    // Show description below if available
+    if (profile.description) {
+      bio.textContent   = profile.description;
+      bio.style.display = 'block';
+    }
+  } else {
+    // Non-agent / plain wallet
+    banner.className = 'acct-banner non-agent';
+    banner.innerHTML = `
+      <span class="acct-banner-badge">Non-agent account</span>
+      <span class="acct-banner-text">
+        Non-agent account with on-chain token activity. This wallet is not a registered MegaClaw agent. Showing wallet-level token deployment and market activity instead.
+      </span>`;
+    banner.style.display = 'flex';
+    bio.style.display    = 'none';
+  }
+}
+
 // ── APPLY PROFILE DATA ───────────────────────────────────────────────────────────
 function applyProfileData(profile) {
   const s = profile.stats || {};
 
   document.getElementById('profileName').textContent =
-    profile.name || ('AGENT_' + (WALLET || '').slice(2,8).toUpperCase());
+    profile.name || ('WALLET_' + (WALLET || '').slice(2,8).toUpperCase());
+
+  // Account type banner
+  renderAccountBanner(profile);
 
   // Tags
   const tags = document.getElementById('profileTags');
@@ -916,8 +1032,8 @@ function applyProfileData(profile) {
     const el = document.createElement('span');
     el.className = `tag ${cls}`; el.textContent = txt; tags.appendChild(el);
   };
-  if (profile.registered) addTag('registered', 'REGISTERED');
-  addTag('active', 'ACTIVE');
+  if (profile.registered) addTag('registered', 'AGENT');
+  else addTag('active', 'WALLET');
   if ((s.tokens_deployed || 0) > 0) addTag('deployer', 'DEPLOYER');
   if (parseFloat(s.vol_total_eth || 0) > 50) addTag('whale', 'WHALE');
 
@@ -1015,8 +1131,13 @@ function injectLiveEvent(raw) {
   if (currentFilter === 'all' || currentFilter === ev.type) {
     renderActivity();
   }
-  // Refresh stats every new event
+  // Refresh stats + tokens table on new event
   fetchProfile().then(applyProfileData).catch(() => {});
+  if (ev.type === 'deploy') {
+    fetchDeployedTokens()
+      .then(d => renderCreatedTokens(d.tokens || []))
+      .catch(() => {});
+  }
 }
 
 // ── WEBSOCKET ────────────────────────────────────────────────────────────────────────────────
@@ -1094,49 +1215,39 @@ async function init() {
     fetchDeployedTokens(),
   ]);
 
-  // Profile
-  if (profileData.status === 'fulfilled') {
-    applyProfileData(profileData.value);
-    document.getElementById('profileName').textContent =
-      profileData.value.name || ('AGENT_' + WALLET.slice(2,8).toUpperCase());
-    document.getElementById('agentBadge').textContent  =
-      profileData.value.registered ? 'ACTIVE' : 'UNREGISTERED';
-    document.getElementById('agentBadge').className    =
-      'avatar-badge' + (profileData.value.registered ? '' : ' offline');
-    if (profileData.value.joined) {
-      const d = new Date(profileData.value.joined);
+  // ── Profile ────────────────────────────────────────────────────────────────
+  const prof = profileData.status === 'fulfilled' ? profileData.value : null;
+  if (prof) {
+    applyProfileData(prof);
+    const isAgent = prof.registered;
+    document.getElementById('agentBadge').textContent =
+      isAgent ? 'AGENT' : 'WALLET';
+    document.getElementById('agentBadge').className =
+      'avatar-badge' + (isAgent ? '' : ' offline');
+    if (prof.joined) {
+      const d = new Date(prof.joined);
       document.getElementById('joinedAt').textContent =
         'JOINED ' + d.toLocaleDateString('en-US',{month:'short',year:'numeric'}).toUpperCase();
     }
-    const bio = document.getElementById('profileBio');
-    bio.textContent = profileData.value.description ||
-      'AI agent operating on MegaETH — deploying bonding curve tokens and executing automated trades via the MegaClaw factory protocol.';
   } else {
-    document.getElementById('profileName').textContent = 'AGENT_' + WALLET.slice(2,8).toUpperCase();
-    document.getElementById('agentBadge').textContent  = 'UNREGISTERED';
+    // API unreachable — show non-agent banner by default
+    renderAccountBanner({ registered: false, address: WALLET });
+    document.getElementById('profileName').textContent = 'WALLET_' + WALLET.slice(2,8).toUpperCase();
+    document.getElementById('agentBadge').textContent  = 'WALLET';
     document.getElementById('agentBadge').className    = 'avatar-badge offline';
   }
 
-  // Activity
+  // ── Activity ───────────────────────────────────────────────────────────────
   if (activityData.status === 'fulfilled') {
     const events = (activityData.value.events || []).map(normalizeEvent);
-    beforeTs   = activityData.value.nextBefore || null;
+    beforeTs    = activityData.value.nextBefore || null;
     allActivity = events;
   }
   renderActivity();
 
-  // Deployed tokens
+  // ── Created Tokens table ───────────────────────────────────────────────────
   if (tokensData.status === 'fulfilled') {
-    const toks = (tokensData.value.tokens || []).map(t => ({
-      name:     t.name,
-      sym:      t.symbol,
-      emoji:    t.symbol ? t.symbol.slice(0,1) : '?',
-      change:   '0.0',
-      vol:      parseFloat(t.vol24hEth).toFixed(4),
-      migrated: t.migrated,
-      addr:     t.address,
-    }));
-    renderDeployedTokens(toks);
+    renderCreatedTokens(tokensData.value.tokens || []);
   }
 
   // Chart (empty — would need price history endpoint)
@@ -1145,8 +1256,13 @@ async function init() {
   // WebSocket for live updates
   connectProfileWS();
 
-  // Poll stats every 30s
+  // Poll stats every 30s, created tokens every 60s
   setInterval(() => fetchProfile().then(applyProfileData).catch(()=>{}), 30000);
+  setInterval(() => {
+    fetchDeployedTokens()
+      .then(d => renderCreatedTokens(d.tokens || []))
+      .catch(() => {});
+  }, 60000);
 }
 
 window.addEventListener('load', init);
