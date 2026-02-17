@@ -455,8 +455,8 @@ function applyStats(s) {
   if (!s) return;
   const v = parseFloat(s.vol24hEth || 0);
   const vd = v >= 1000 ? (v/1000).toFixed(1)+'K ETH'
-           : v >= 1 ? v.toFixed(2)+' ETH'
-           : (v*1000).toFixed(1)+' mETH';
+           : v >= 0.0001 ? v.toFixed(4)+' ETH'
+           : '0 ETH';
   document.getElementById('statVol').textContent    = vd;
   document.getElementById('statAgents').textContent = s.totalAgents || 0;
   document.getElementById('statTrades').textContent = (s.totalTrades || 0).toLocaleString();

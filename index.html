@@ -324,7 +324,7 @@ let vol=1420000,tc=847,tr=12489;
 function applyStats(s){
   if(!s)return;
   const v=parseFloat(s.vol24hEth||0);
-  const vd=v>=1000?(v/1000).toFixed(1)+'K ETH':v>=1?v.toFixed(2)+' ETH':(v*1000).toFixed(1)+' mETH';
+  const vd=v>=1000?(v/1000).toFixed(1)+'K ETH':v>=0.0001?v.toFixed(4)+' ETH':'0 ETH';
   document.getElementById('vol').textContent=vd;
   document.getElementById('tokens').textContent=s.totalTokens||0;
   document.getElementById('bots').textContent=s.totalAgents||0;
