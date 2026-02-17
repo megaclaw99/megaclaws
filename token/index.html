@@ -343,7 +343,7 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
         <div id="walletLockOverlay" style="display:none;position:absolute;inset:0;z-index:10;background:rgba(25,25,26,.92);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px">
           <div style="font-family:'VT323',monospace;font-size:48px;color:rgba(236,232,232,.15)">&#128274;</div>
           <div style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:2px;color:var(--moon2)">CONNECT WALLET TO TRADE</div>
-          <button class="btn-sm" style="margin-top:4px">[ CONNECT WALLET ]</button>
+          <button class="btn-sm" style="margin-top:4px" onclick="MC.openWalletModal()">[ CONNECT WALLET ]</button>
         </div>
         <div class="trade-tabs">
           <button class="trade-tab buy active" id="tabBuy" onclick="setTradeTab('buy')">BUY</button>
@@ -403,6 +403,10 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
 </footer>
 
 <script>
+// Ensure MC.wallet exists before wallet.js loads
+window.MC = window.MC || {};
+MC.wallet = MC.wallet || { address: null, connected: false, provider: null };
+
 const API = 'https://megaclaws-production.up.railway.app';
 const EXPLORER = 'https://mega.etherscan.io';
 const ICONS = ['⚡','🌙','🔥','💀','🚀','🌊','🤖','💎','🐉','👾','⚗️','🌀','🎯','🧬','💡'];
@@ -445,77 +449,8 @@ function timeAgo(iso) {
   return Math.floor(s/3600)+'h ago';
 }
 
-// ── Wallet connect ──────────────────────────────────────────────────────────────
-async function connectWallet() {
-  if (typeof window.ethereum === 'undefined') {
-    showTx('Install MetaMask to trade', 'err'); return;
-  }
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (!accounts[0]) return;
-
-    // Switch to MegaETH chain
-    try {
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x10E6' }], // 4326 in hex
-      });
-    } catch(sw) {
-      if (sw.code === 4902) {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0x10E6',
-            chainName: 'MegaETH Mainnet',
-            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-            rpcUrls: ['https://mainnet.megaeth.com/rpc'],
-            blockExplorerUrls: ['https://mega.etherscan.io'],
-          }]
-        });
-      }
-    }
-
-    MC.wallet.address = accounts[0].toLowerCase();
-    MC.wallet.connected = true;
-    onWalletConnected();
-  } catch(e) {
-    showTx('Wallet connection rejected', 'err');
-  }
-}
-
-function onWalletConnected() {
-  const btn = document.getElementById('connectBtn');
-  btn.textContent = MC.wallet.address.slice(0,6)+'...'+MC.wallet.address.slice(-4);
-  btn.style.borderColor = 'var(--green)';
-  btn.style.color = 'var(--green)';
-
-  // Hide lock overlay, enable form
-  document.getElementById('walletLockOverlay').style.display = 'none';
-  document.getElementById('amountInput').disabled = false;
-  document.querySelectorAll('.quick-btn').forEach(b => b.disabled = false);
-  document.getElementById('tradeBtn').disabled = false;
-  document.getElementById('walletNote').textContent =
-    'Connected: '+MC.wallet.address.slice(0,6)+'...'+MC.wallet.address.slice(-4)+' on MegaETH';
-}
-
-function initWalletState() {
-  // Show lock overlay by default
-  document.getElementById('walletLockOverlay').style.display = 'flex';
-  document.getElementById('amountInput').disabled = true;
-  document.querySelectorAll('.quick-btn').forEach(b => b.disabled = true);
-  document.getElementById('tradeBtn').disabled = true;
-
-  // Check if already connected
-  if (typeof window.ethereum !== 'undefined') {
-    window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
-      if (accounts[0]) { MC.wallet.address = accounts[0].toLowerCase(); MC.wallet.connected = true; onWalletConnected(); }
-    });
-    window.ethereum.on('accountsChanged', accounts => {
-      if (accounts[0]) { MC.wallet.address = accounts[0].toLowerCase(); MC.wallet.connected = true; onWalletConnected(); }
-      else { MC.wallet.connected = false; MC.wallet.address = null; document.getElementById('connectBtn').textContent='[ CONNECT ]'; document.getElementById('walletLockOverlay').style.display='flex'; }
-    });
-  }
-}
+// ── Wallet state — driven by wallet.js events ───────────────────────────────
+// (all wiring in initTokenWalletState below)
 
 // ── Load token ────────────────────────────────────────────────────────────────
 async function loadToken() {
@@ -930,6 +865,16 @@ function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// ── Token wallet state (lock/unlock trade panel) ─────────────────────────────
+function initTokenWalletState() {
+  // Lock by default; unlock if wallet.js already has a session
+  setTradeLocked(!(MC?.wallet?.connected));
+
+  // wallet.js dispatches these on connect/disconnect
+  window.addEventListener('wallet:connected',    () => setTradeLocked(false));
+  window.addEventListener('wallet:disconnected', () => setTradeLocked(true));
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 if (!TOKEN_ADDR) {
   document.getElementById('tokenName').textContent = 'INVALID TOKEN';
@@ -937,12 +882,12 @@ if (!TOKEN_ADDR) {
 } else {
   loadToken();
 }
-
-// ── Token wallet state (lock/unlock trade panel) ─────────────────────────────
-function initTokenWalletState() {
-  setTradeLocked(!MC.wallet.connected);
-  window.addEventListener('wallet:connected', () => setTradeLocked(false));
-  window.addEventListener('wallet:disconnected', () => setTradeLocked(true));
+// wallet.js may load after this script, so init after DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initTokenWalletState);
+} else {
+  // wallet.js restored session fires wallet:connected before this — give it a tick
+  setTimeout(initTokenWalletState, 0);
 }
 function setTradeLocked(locked) {
   const overlay = document.getElementById('walletLockOverlay');
