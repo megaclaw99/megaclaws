@@ -198,6 +198,12 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
     </div>
     <div class="stat-item">
       <div class="stat-live"><span class="live-dot"></span>LIVE</div>
+      <div class="stat-value" id="statFees" style="color:var(--green)">$0</div>
+      <div class="stat-label">Agent Fees Earned</div>
+      <div style="font-size:9px;color:var(--text2);margin-top:2px">80% of 1% trade fee</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-live"><span class="live-dot"></span>LIVE</div>
       <div class="stat-value" id="statTrending" style="font-size:18px;color:var(--yellow)">—</div>
       <div class="stat-label">Trending Token</div>
       <div style="font-size:9px;color:var(--text2);margin-top:2px" id="statTrendingVol">—</div>
@@ -448,23 +454,34 @@ function openDrawer(token){
 // ── API fetch ─────────────────────────────────────────────────────────────────
 // ── Real-time data layer ───────────────────────────────────────────────────
 let wsConn = null;
+let ethPrice = 0;
+async function fetchEthPrice(){
+  try{const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');if(r.ok){const d=await r.json();ethPrice=d.ethereum?.usd||0;}}
+  catch(_){try{const r=await fetch('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD');if(r.ok){const d=await r.json();ethPrice=d.USD||0;}}catch(__){}}
+}
+function fmtUsd(eth){
+  const usd=parseFloat(eth||0)*ethPrice;
+  if(!usd||!ethPrice)return parseFloat(eth||0).toFixed(4)+' WETH';
+  if(usd>=1000000)return '$'+(usd/1000000).toFixed(2)+'M';
+  if(usd>=1000)return '$'+(usd/1000).toFixed(1)+'K';
+  return '$'+usd.toFixed(2);
+}
 let wsRetry = 0;
 let apiReachable = false;
 
 function applyStats(s) {
   if (!s) return;
-  const v = parseFloat(s.vol24hEth || 0);
-  const vd = v >= 1000 ? (v/1000).toFixed(1)+'K WETH'
-           : v >= 0.0001 ? v.toFixed(4)+' WETH'
-           : '0 WETH';
+  const vd = fmtUsd(s.vol24hEth);
+  const fd = fmtUsd(s.agentFeesEth || 0);
   document.getElementById('statVol').textContent    = vd;
   document.getElementById('statAgents').textContent = s.totalAgents || 0;
   document.getElementById('statTrades').textContent = (s.totalTrades || 0).toLocaleString();
   document.getElementById('statTokens').textContent = s.totalTokens || 0;
   document.getElementById('tokenCount').textContent = (s.totalTokens || 0) + ' TOTAL';
+  document.getElementById('statFees').textContent   = fd;
   if (s.topToken) {
     document.getElementById('statTrending').textContent = '$' + s.topToken.symbol;
-    document.getElementById('statTrendingVol').textContent = s.topToken.vol24hEth + ' WETH';
+    document.getElementById('statTrendingVol').textContent = fmtUsd(s.topToken.vol24hEth);
   }
   const pm = parseFloat(s.tradesPerMin || 0);
   document.getElementById('statTpm').textContent = pm.toFixed(1) + '/min';
@@ -635,6 +652,7 @@ document.getElementById('searchInput').addEventListener('input', () => renderTok
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 buildTicker();
+fetchEthPrice(); setInterval(fetchEthPrice, 120000);
 // 1. Connect WebSocket for real-time push
 connectWS();
 // 2. Fetch initial data

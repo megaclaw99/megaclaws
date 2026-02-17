@@ -90,6 +90,10 @@ function getStats(db) {
     GROUP BY t.token_address ORDER BY vol DESC LIMIT 1
   `).get(day);
 
+  // Agent fees = 80% of 1% of total ETH buy volume
+  const agentFeesEth = volAll * 0.008;
+  const agentFees24hEth = vol24h * 0.008;
+
   return {
     totalTokens,
     totalAgents,
@@ -97,6 +101,8 @@ function getStats(db) {
     graduated,
     volAllEth: (volAll / 1e18).toFixed(4),
     vol24hEth: (vol24h / 1e18).toFixed(4),
+    agentFeesEth: (agentFeesEth / 1e18).toFixed(4),
+    agentFees24hEth: (agentFees24hEth / 1e18).toFixed(4),
     trades24h,
     tradesPerMin: (tradesHour / 60).toFixed(2),
     topToken: topToken ? {

@@ -198,6 +198,7 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:40px 2
     <div class="stat-item"><div class="stat-live"><span class="live-dot"></span>LIVE</div><div class="stat-value" id="tokens">0</div><div class="stat-label">Tokens Deployed</div></div>
     <div class="stat-item"><div class="stat-live"><span class="live-dot"></span>LIVE</div><div class="stat-value" id="bots">0</div><div class="stat-label">Active Agents</div></div>
     <div class="stat-item"><div class="stat-live"><span class="live-dot"></span>LIVE</div><div class="stat-value" id="trades">0</div><div class="stat-label">Trades Executed</div></div>
+    <div class="stat-item"><div class="stat-live"><span class="live-dot"></span>LIVE</div><div class="stat-value" id="agentFees" style="color:var(--green)">$0</div><div class="stat-label">Agent Fees Earned</div></div>
   </div>
   <div class="container">
     <div class="section-title">TOKEN FACTORY PROTOCOL</div>
@@ -323,16 +324,20 @@ const API_BASE='https://megaclaws-production.up.railway.app';
 let vol=1420000,tc=847,tr=12489;
 function applyStats(s){
   if(!s)return;
-  const v=parseFloat(s.vol24hEth||0);
-  const vd=v>=1000?(v/1000).toFixed(1)+'K WETH':v>=0.0001?v.toFixed(4)+' WETH':'0 WETH';
+  const vd=fmtUsd(s.vol24hEth);
+  const fd=fmtUsd(s.agentFeesEth||0);
   document.getElementById('vol').textContent=vd;
   document.getElementById('tokens').textContent=s.totalTokens||0;
   document.getElementById('bots').textContent=s.totalAgents||0;
-  document.getElementById('trades').textContent=s.totalTrades||0;
+  document.getElementById('trades').textContent=(s.totalTrades||0).toLocaleString();
+  document.getElementById('agentFees').textContent=fd;
   document.getElementById('sideVol').textContent=vd;
   document.getElementById('sideChange').textContent='&#9650; '+s.tradesPerMin+'/min';
 }
 let usingRealStats=false;
+let ethPrice=0;
+async function fetchEthPrice(){try{const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');if(r.ok){const d=await r.json();ethPrice=d.ethereum?.usd||0;}}catch(_){try{const r=await fetch('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD');if(r.ok){const d=await r.json();ethPrice=d.USD||0;}}catch(__){}}}
+function fmtUsd(eth){const usd=parseFloat(eth||0)*ethPrice;if(!usd||!ethPrice)return parseFloat(eth||0).toFixed(4)+' WETH';if(usd>=1000000)return '$'+(usd/1000000).toFixed(2)+'M';if(usd>=1000)return '$'+(usd/1000).toFixed(1)+'K';return '$'+usd.toFixed(2);}
 async function fetchStats(){try{const r=await fetch(API_BASE+'/api/stats');if(r.ok){applyStats(await r.json());usingRealStats=true;}}catch(_){}}
 function connectHomeWS(){
   try{
@@ -345,6 +350,7 @@ function updateStats(){if(usingRealStats)return;vol+=rndN(500,6000);tc+=rndN(0,2
 function buildFeed(){const grid=document.getElementById('feedGrid');tokens.forEach(tok=>{const card=document.createElement('div');card.className='feed-card';card.innerHTML=`<div class="card-top"><div class="token-avatar">${tok.icon}</div><div><div class="card-token-name">${tok.sym}</div><div class="card-token-sym">${tok.name}</div></div></div><p class="card-desc">${tok.desc}</p><div class="card-footer"><span>24H CHANGE</span><div class="card-price ${tok.dir}">${tok.price}</div></div>`;grid.appendChild(card);});}
 buildTicker();buildFeed();updateStats();
 for(let i=0;i<14;i++)addActivity();
+fetchEthPrice();setInterval(fetchEthPrice,120000);
 fetchStats();setInterval(fetchStats,10000);
 connectHomeWS();
 setInterval(addActivity,1400);setInterval(updateStats,3200);
