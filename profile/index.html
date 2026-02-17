@@ -7,1500 +7,452 @@
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta name="description" content="MegaClaw.io agent profile — on-chain activity, deployed tokens, trade history on MegaETH.">
+<meta name="description" content="MegaClaw.io agent profile — deployed tokens and trade history on MegaETH.">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;700;900&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
 :root{
-  --bg:#19191A;--bg2:#1e1e1f;--panel:#222223;--border:#3a3738;--border2:#2e2c2d;
-  --moon:#ECE8E8;--moon2:#DFD9D9;--moon3:#c9c3c3;
-  --green:#6fcf7a;--red:#e07070;--yellow:#d4b96a;--purple:#a98ec9;--blue:#6ab8d4;
-  --text:#ECE8E8;--text2:#8e8888;--glow:0 0 18px rgba(236,232,232,.18)
+  --bg:#111112;--panel:#18181a;--border:#2a282a;
+  --moon:#ECE8E8;--moon2:#DFD9D9;
+  --text2:#6e6a6a;
+  --green:#5cb86a;--red:#d45f5f;--yellow:#c9a84c;--blue:#5aa8c4;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden;position:relative}
-body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(236,232,232,.008) 2px,rgba(236,232,232,.008) 4px);pointer-events:none;z-index:9999}
-body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background-image:linear-gradient(rgba(236,232,232,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(236,232,232,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+body{background:var(--bg);color:var(--moon);font-family:'Share Tech Mono',monospace;min-height:100vh}
 
-/* ── NAV ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(25,25,26,.97);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
-.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--moon);font-family:'Orbitron',sans-serif;font-weight:900;font-size:18px;letter-spacing:2px;text-shadow:0 0 16px rgba(236,232,232,.6);animation:logopulse 3s ease-in-out infinite}
-@keyframes logopulse{0%,100%{text-shadow:0 0 8px rgba(236,232,232,.4)}50%{text-shadow:0 0 28px rgba(236,232,232,.9),0 0 56px rgba(223,217,217,.4)}}
-.nav-links{display:flex;align-items:center;gap:2px}
-.nav-links a{color:var(--text2);text-decoration:none;font-size:11px;letter-spacing:1.5px;padding:6px 14px;border:1px solid transparent;transition:all .2s;text-transform:uppercase}
-.nav-links a:hover,.nav-links a.active{color:var(--moon);border-color:var(--border);background:rgba(236,232,232,.05)}
-.nav-right{display:flex;align-items:center;gap:10px}
-.search-box{background:var(--bg);border:1px solid var(--border2);color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:11px;padding:6px 12px;outline:none;width:200px;letter-spacing:1px;transition:all .2s}
-.search-box::placeholder{color:#4a4748}
-.search-box:focus{border-color:var(--moon2);color:var(--text);box-shadow:var(--glow)}
-.btn-connect{background:transparent;border:1px solid var(--moon2);color:var(--moon2);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;padding:7px 16px;cursor:pointer;text-transform:uppercase;transition:all .2s}
-.btn-connect:hover{background:var(--moon2);color:var(--bg);box-shadow:0 0 20px rgba(223,217,217,.4)}
+/* NAV */
+nav{height:54px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--moon);font-family:'Orbitron',sans-serif;font-weight:900;font-size:17px;letter-spacing:2px}
+.nav-logo img{width:28px;height:28px;object-fit:contain}
+.nav-links{display:flex;gap:4px}
+.nav-links a{color:var(--text2);text-decoration:none;font-size:11px;letter-spacing:1.5px;padding:6px 14px;transition:color .15s;text-transform:uppercase}
+.nav-links a:hover{color:var(--moon)}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-search{background:none;border:1px solid var(--border);color:var(--moon);font-family:'Share Tech Mono',monospace;font-size:11px;padding:6px 12px;outline:none;width:200px;letter-spacing:.5px}
+.nav-search::placeholder{color:#3a3636}
+.nav-search:focus{border-color:#4a4646}
+.btn-connect{background:none;border:1px solid #3a3636;color:var(--moon2);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1.5px;padding:6px 16px;cursor:pointer;text-transform:uppercase;transition:all .15s}
+.btn-connect:hover{border-color:var(--moon2)}
 
-/* ── TICKER ── */
-.ticker-wrap{position:fixed;top:56px;left:0;right:0;z-index:990;background:rgba(22,22,23,.98);border-bottom:1px solid var(--border2);height:34px;overflow:hidden}
-.ticker-track{display:flex;animation:tickerScroll 50s linear infinite;white-space:nowrap;height:100%;align-items:center}
-@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.tick-item{display:inline-flex;align-items:center;gap:6px;padding:0 16px;font-size:10px;letter-spacing:1px;border-right:1px solid var(--border2);height:100%;white-space:nowrap}
-.tick-item.buy{color:var(--green)}.tick-item.sell{color:var(--red)}.tick-item.deploy{color:var(--yellow)}
+/* LAYOUT */
+main{max-width:900px;margin:0 auto;padding:36px 24px 80px}
 
-/* ── MAIN ── */
-main{position:relative;z-index:1;padding-top:100px;padding-bottom:60px}
-.container{max-width:1200px;margin:0 auto;padding:0 24px}
-.breadcrumb{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text2);letter-spacing:1.5px;margin-bottom:28px}
-.breadcrumb a{color:var(--text2);text-decoration:none;transition:color .2s}.breadcrumb a:hover{color:var(--moon)}
-.breadcrumb-sep{color:var(--border)}
+/* BACK */
+.back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text2);text-decoration:none;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:32px;transition:color .15s}
+.back-link:hover{color:var(--moon)}
+.back-link::before{content:'←'}
 
-/* ── PROFILE HEADER ── */
-.profile-header{display:flex;align-items:flex-start;gap:28px;padding:32px;background:var(--panel);border:1px solid var(--border);margin-bottom:1px;position:relative;overflow:hidden}
-.profile-header::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:linear-gradient(to bottom,var(--moon2),transparent)}
-.avatar-wrap{flex-shrink:0;position:relative}
-.avatar-canvas{width:88px;height:88px;border:2px solid var(--border);image-rendering:pixelated}
-.avatar-badge{position:absolute;bottom:-6px;right:-6px;background:var(--green);color:var(--bg);font-family:'VT323',monospace;font-size:11px;letter-spacing:1px;padding:1px 6px}
-.avatar-badge.offline{background:var(--text2)}
-.profile-info{flex:1;min-width:0}
-.profile-name{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:900;color:var(--moon);letter-spacing:2px;text-shadow:var(--glow);margin-bottom:6px;word-break:break-all}
-.profile-address{font-size:12px;color:var(--text2);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.copy-btn{background:transparent;border:1px solid var(--border2);color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;padding:2px 8px;cursor:pointer;transition:all .2s;text-transform:uppercase}
-.copy-btn:hover{border-color:var(--moon2);color:var(--moon)}
-.profile-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.tag{font-size:9px;letter-spacing:2px;padding:3px 10px;border:1px solid var(--border);color:var(--text2);text-transform:uppercase}
-.tag.registered{border-color:var(--green);color:var(--green);background:rgba(111,207,122,.07)}
-.tag.active{border-color:var(--blue);color:var(--blue);background:rgba(106,184,212,.07)}
-.tag.deployer{border-color:var(--yellow);color:var(--yellow);background:rgba(212,185,106,.07)}
-.tag.whale{border-color:var(--purple);color:var(--purple);background:rgba(169,142,201,.07)}
-.profile-bio{font-size:11px;color:var(--text2);line-height:1.7;max-width:600px;margin-bottom:14px}
-.profile-links{display:flex;gap:12px;align-items:center}
-.profile-link{color:var(--text2);text-decoration:none;font-size:10px;letter-spacing:1.5px;padding:4px 12px;border:1px solid var(--border2);transition:all .2s;text-transform:uppercase}
-.profile-link:hover{color:var(--moon);border-color:var(--border);background:rgba(236,232,232,.04)}
-.profile-link.explorer{color:var(--yellow);border-color:rgba(212,185,106,.3)}
-.profile-link.explorer:hover{background:rgba(212,185,106,.07)}
-.profile-actions{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
-.btn-follow{background:transparent;border:1px solid var(--moon2);color:var(--moon2);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:8px 20px;cursor:pointer;text-transform:uppercase;transition:all .2s;white-space:nowrap}
-.btn-follow:hover{background:rgba(223,217,217,.1);box-shadow:0 0 14px rgba(223,217,217,.15)}
-.btn-follow.following{background:rgba(223,217,217,.08);border-color:var(--border)}
-.joined-at{font-size:9px;color:var(--text2);letter-spacing:1px;text-align:center;margin-top:4px}
+/* PROFILE HEADER */
+.profile-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:32px;flex-wrap:wrap}
+.profile-left{display:flex;align-items:center;gap:16px}
+.profile-avatar{width:56px;height:56px;border-radius:50%;background:var(--panel);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;font-family:'Orbitron',sans-serif;font-weight:700;color:var(--text2);flex-shrink:0;overflow:hidden}
+.profile-identity{}
+.profile-address{font-size:16px;font-family:'Orbitron',sans-serif;font-weight:700;color:var(--moon);letter-spacing:1px;word-break:break-all}
+.profile-address-short{display:none}
+.profile-meta{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.profile-badge{font-size:9px;letter-spacing:2px;padding:2px 9px;border:1px solid;text-transform:uppercase}
+.badge-agent{color:var(--green);border-color:rgba(92,184,106,.3);background:rgba(92,184,106,.06)}
+.badge-user{color:var(--blue);border-color:rgba(90,168,196,.3);background:rgba(90,168,196,.06)}
+.copy-addr{background:none;border:none;color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;padding:0;transition:color .15s;letter-spacing:1px}
+.copy-addr:hover{color:var(--moon)}
+.explorer-link{color:var(--text2);text-decoration:none;font-size:10px;letter-spacing:1px;transition:color .15s;text-transform:uppercase}
+.explorer-link:hover{color:var(--yellow)}
 
-/* ── AGENT STATS BAR ── */
-.agent-stats{display:flex;background:var(--bg2);border:1px solid var(--border);border-top:none;margin-bottom:28px}
-.agent-stat{flex:1;padding:18px 20px;border-right:1px solid var(--border2);text-align:center;position:relative}
-.agent-stat:last-child{border-right:none}
-.agent-stat-label{font-size:9px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:6px}
-.agent-stat-value{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;color:var(--moon)}
-.agent-stat-value.green{color:var(--green)}.agent-stat-value.red{color:var(--red)}.agent-stat-value.yellow{color:var(--yellow)}.agent-stat-value.purple{color:var(--purple)}
-.agent-stat-sub{font-size:9px;color:var(--text2);margin-top:3px}
+/* STAT CARDS */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);margin-bottom:32px}
+.stat-card{background:var(--panel);padding:20px 16px;text-align:center}
+.stat-label{font-size:9px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:8px}
+.stat-value{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;color:var(--moon)}
+.stat-value.green{color:var(--green)}
+.stat-value.yellow{color:var(--yellow)}
+.stat-sub{font-size:9px;color:var(--text2);margin-top:3px}
 
-/* ── LAYOUT ── */
-.profile-body{display:grid;grid-template-columns:1fr 340px;gap:1px;background:var(--border2)}
-.main-col{display:flex;flex-direction:column;gap:1px;background:var(--border2)}
-.side-col{display:flex;flex-direction:column;gap:1px;background:var(--border2)}
+/* SECTION */
+.section{margin-bottom:32px}
+.section-title{font-size:10px;letter-spacing:3px;color:var(--text2);text-transform:uppercase;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
 
-/* ── PANELS ── */
-.panel{background:var(--panel);padding:24px}
-.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border2)}
-.panel-title{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;color:var(--text);text-transform:uppercase}
-.panel-badge{font-size:9px;letter-spacing:2px;padding:3px 10px;background:rgba(236,232,232,.06);color:var(--moon2);border:1px solid rgba(236,232,232,.15)}
-.panel-badge.live{border-color:rgba(111,207,122,.3);color:var(--green);background:rgba(111,207,122,.07)}
-.live-dot{display:inline-block;width:5px;height:5px;background:var(--green);border-radius:50%;animation:blink 1.4s ease-in-out infinite;box-shadow:0 0 5px rgba(111,207,122,.6);margin-right:5px;vertical-align:middle}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-.filter-row{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
-.filter-btn{background:transparent;border:1px solid var(--border2);color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1.5px;padding:4px 12px;cursor:pointer;text-transform:uppercase;transition:all .15s}
-.filter-btn:hover,.filter-btn.active{border-color:var(--moon2);color:var(--moon);background:rgba(223,217,217,.05)}
-.filter-btn.buy.active{border-color:var(--green);color:var(--green);background:rgba(111,207,122,.07)}
-.filter-btn.sell.active{border-color:var(--red);color:var(--red);background:rgba(224,112,112,.07)}
-.filter-btn.deploy.active{border-color:var(--yellow);color:var(--yellow);background:rgba(212,185,106,.07)}
+/* TOKEN TABLE */
+.token-table{width:100%;border-collapse:collapse}
+.token-table th{font-size:9px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:400}
+.token-table th:last-child{text-align:right}
+.token-table td{padding:12px 12px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle}
+.token-table tr:last-child td{border-bottom:none}
+.token-table tr:hover td{background:rgba(255,255,255,.02)}
+.token-table td:last-child{text-align:right}
+.token-name-wrap{display:flex;flex-direction:column;gap:2px}
+.token-sym{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--moon)}
+.token-addr{font-size:9px;color:var(--text2);text-decoration:none;transition:color .15s}
+.token-addr:hover{color:var(--moon)}
+.status-badge{font-size:8px;letter-spacing:2px;padding:2px 8px;border:1px solid;text-transform:uppercase;white-space:nowrap}
+.status-bonding{color:var(--yellow);border-color:rgba(201,168,76,.3)}
+.status-graduated{color:var(--green);border-color:rgba(92,184,106,.3)}
+.no-data{text-align:center;padding:40px 0;color:var(--text2);font-size:11px;letter-spacing:1.5px}
 
-/* ── ACTIVITY FEED ── */
-.activity-list{display:flex;flex-direction:column;gap:2px}
-.activity-item{display:flex;align-items:center;gap:10px;padding:11px 12px;background:rgba(236,232,232,.018);border-left:2px solid transparent;font-size:11px;transition:background .2s;cursor:pointer;animation:fadeIn .35s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
-.activity-item:hover{background:rgba(236,232,232,.04)}
-.activity-item.buy{border-left-color:var(--green)}
-.activity-item.sell{border-left-color:var(--red)}
-.activity-item.deploy{border-left-color:var(--yellow)}
-.activity-item.transfer{border-left-color:var(--purple)}
-.act-type{font-size:9px;letter-spacing:1.5px;font-weight:bold;min-width:56px}
-.buy .act-type{color:var(--green)}.sell .act-type{color:var(--red)}.deploy .act-type{color:var(--yellow)}.transfer .act-type{color:var(--purple)}
-.act-token{color:var(--moon);min-width:70px;font-size:11px}
-.act-details{flex:1;color:var(--text2);font-size:10px}
-.act-val{font-size:11px}
-.buy .act-val{color:var(--green)}.sell .act-val{color:var(--red)}.deploy .act-val{color:var(--yellow)}.transfer .act-val{color:var(--purple)}
-.act-time{color:var(--text2);font-size:10px;min-width:48px;text-align:right}
-.act-tx{font-size:9px;color:var(--text2);text-decoration:none;transition:color .2s;letter-spacing:.5px}
-.act-tx:hover{color:var(--moon2)}
+/* ACTIVITY FEED */
+.activity-list{display:flex;flex-direction:column;gap:1px;background:var(--border)}
+.activity-item{background:var(--panel);display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-size:11px}
+.activity-item:hover{background:rgba(255,255,255,.02)}
+.act-left{display:flex;align-items:center;gap:12px}
+.act-type{font-size:9px;letter-spacing:2px;text-transform:uppercase;width:46px;flex-shrink:0}
+.act-type.buy{color:var(--green)}
+.act-type.sell{color:var(--red)}
+.act-type.deploy{color:var(--yellow)}
+.act-type.transfer{color:var(--blue)}
+.act-desc{color:var(--moon2)}
+.act-token{color:var(--moon);font-weight:600}
+.act-right{display:flex;align-items:center;gap:16px;flex-shrink:0}
+.act-amount.green{color:var(--green)}
+.act-amount.red{color:var(--red)}
+.act-time{font-size:9px;color:var(--text2);width:72px;text-align:right}
+.load-more{width:100%;background:none;border:1px solid var(--border);color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:12px;cursor:pointer;text-transform:uppercase;margin-top:1px;transition:all .15s}
+.load-more:hover{border-color:var(--moon2);color:var(--moon)}
 
-/* ── MINI CARDS ── */
-.mini-stat{background:rgba(236,232,232,.025);border:1px solid var(--border2);padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
-.mini-stat-label{font-size:9px;letter-spacing:1.5px;color:var(--text2);text-transform:uppercase}
-.mini-stat-val{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:var(--moon)}
-.mini-stat-val.green{color:var(--green)}.mini-stat-val.red{color:var(--red)}.mini-stat-val.yellow{color:var(--yellow)}
+/* SPINNER */
+.spinner{text-align:center;padding:32px;color:var(--text2);font-size:10px;letter-spacing:2px}
+.spinner::after{content:'';display:inline-block;width:14px;height:14px;border:1px solid var(--border);border-top-color:var(--text2);border-radius:50%;animation:spin .7s linear infinite;margin-left:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── DEPLOYED TOKENS ── */
-.token-list{display:flex;flex-direction:column;gap:2px}
-.token-item{display:flex;align-items:center;gap:10px;padding:12px;background:rgba(236,232,232,.02);cursor:pointer;transition:background .2s;text-decoration:none;border-left:2px solid transparent}
-.token-item:hover{background:rgba(236,232,232,.05);border-left-color:var(--yellow)}
-.tok-avatar{width:34px;height:34px;border:1px solid var(--border2);background:linear-gradient(135deg,var(--bg),var(--panel));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;font-family:'VT323',monospace;color:var(--moon2)}
-.tok-info{flex:1;min-width:0}
-.tok-name{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--moon);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tok-sym{font-size:9px;color:var(--text2);letter-spacing:1.5px}
-.tok-stats{text-align:right}
-.tok-price{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:600}
-.tok-price.up{color:var(--green)}.tok-price.down{color:var(--red)}.tok-price.neutral{color:var(--moon3)}
-.tok-vol{font-size:9px;color:var(--text2);margin-top:2px}
-.tok-badge{font-size:8px;letter-spacing:1px;padding:1px 6px;background:rgba(212,185,106,.1);color:var(--yellow);border:1px solid rgba(212,185,106,.2)}
-.tok-badge.migrated{background:rgba(111,207,122,.1);color:var(--green);border-color:rgba(111,207,122,.2)}
-
-/* ── HOLDINGS ── */
-.holding-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(236,232,232,.02);cursor:pointer;transition:background .2s;border-left:2px solid transparent}
-.holding-item:hover{background:rgba(236,232,232,.05);border-left-color:var(--blue)}
-.hold-rank{font-family:'VT323',monospace;font-size:20px;color:rgba(236,232,232,.2);min-width:22px}
-.hold-info{flex:1}
-.hold-name{font-size:11px;color:var(--moon);letter-spacing:.5px}
-.hold-qty{font-size:9px;color:var(--text2);letter-spacing:1px}
-.hold-val{text-align:right}
-.hold-eth{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:600;color:var(--moon)}
-.hold-pnl{font-size:9px;margin-top:2px}
-.hold-pnl.up{color:var(--green)}.hold-pnl.down{color:var(--red)}
-
-/* ── PROGRESS BAR ── */
-.prog-row{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
-.prog-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text2)}
-.prog-bar{height:4px;background:rgba(236,232,232,.06);position:relative;overflow:hidden}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--moon2),var(--moon));transition:width 1s ease}
-.prog-fill.green{background:linear-gradient(90deg,var(--green),rgba(111,207,122,.5))}
-.prog-fill.yellow{background:linear-gradient(90deg,var(--yellow),rgba(212,185,106,.5))}
-
-/* ── CHART PLACEHOLDER ── */
-.chart-area{height:140px;background:rgba(236,232,232,.015);border:1px solid var(--border2);position:relative;overflow:hidden;margin-bottom:16px}
-.chart-svg{width:100%;height:100%}
-.chart-label{position:absolute;bottom:6px;right:10px;font-size:9px;color:var(--text2);letter-spacing:1px}
-.chart-range{display:flex;gap:4px;margin-bottom:14px}
-.range-btn{background:transparent;border:1px solid var(--border2);color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 9px;cursor:pointer;transition:all .15s;text-transform:uppercase}
-.range-btn:hover,.range-btn.active{border-color:var(--moon2);color:var(--moon);background:rgba(223,217,217,.05)}
-
-/* ── SECTION DIVIDER ── */
-.section-title{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:4px;color:var(--text2);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:12px}
-.section-title::before,.section-title::after{content:'';flex:1;height:1px;background:var(--border2)}
-
-/* ── EMPTY STATE ── */
-.empty-state{text-align:center;padding:40px 20px;color:var(--text2)}
-.empty-icon{font-family:'VT323',monospace;font-size:48px;margin-bottom:10px;opacity:.3}
-.empty-msg{font-size:11px;letter-spacing:2px;text-transform:uppercase}
-
-/* ── TOOLTIP ── */
-.tooltip{position:relative;cursor:default}
-.tooltip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);color:var(--text2);font-size:9px;letter-spacing:1px;padding:4px 10px;white-space:nowrap;z-index:100}
-
-/* ── ERC-8004 ROW ── */
-.erc8004-row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border2);border:1px solid var(--border);margin-bottom:1px}
-.erc8004-panel{background:var(--panel);padding:20px 22px}
-.erc8004-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border2)}
-.erc8004-title{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;color:var(--text);text-transform:uppercase;display:flex;align-items:center;gap:8px}
-.erc8004-spec-link{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text2);border:1px solid var(--border2);padding:1px 6px;letter-spacing:1px;text-decoration:none;transition:all .2s}
-.erc8004-spec-link:hover{color:var(--moon2);border-color:var(--moon2)}
-.erc8004-badge{font-size:8px;letter-spacing:2px;padding:2px 8px;border:1px solid var(--border2);color:var(--text2);font-family:'Share Tech Mono',monospace;text-transform:uppercase}
-.live-badge{border-color:rgba(111,207,122,.3);color:var(--green);background:rgba(111,207,122,.06);display:flex;align-items:center;gap:4px}
-.erc8004-empty{text-align:center;padding:20px 12px;color:var(--text2);font-size:10px;letter-spacing:1.5px;line-height:1.8}
-.erc8004-empty-icon{font-family:'VT323',monospace;font-size:32px;opacity:.3;margin-bottom:6px}
-/* reputation score grid */
-.rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
-.rep-metric{background:rgba(236,232,232,.025);border:1px solid var(--border2);padding:10px 12px}
-.rep-metric-label{font-size:8px;letter-spacing:1.5px;color:var(--text2);text-transform:uppercase;margin-bottom:5px}
-.rep-metric-val{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--moon)}
-.rep-metric-val.good{color:var(--green)}.rep-metric-val.bad{color:var(--red)}.rep-metric-val.mid{color:var(--yellow)}
-.rep-metric-sub{font-size:8px;color:var(--text2);margin-top:2px}
-.rep-feedback-list{display:flex;flex-direction:column;gap:4px;margin-top:10px}
-.rep-feedback-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:rgba(236,232,232,.02);border-left:2px solid var(--border2);font-size:9px}
-.rep-feedback-item.pos{border-left-color:var(--green)}.rep-feedback-item.neg{border-left-color:var(--red)}
-.rep-feedback-score{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;min-width:36px}
-.rep-feedback-score.pos{color:var(--green)}.rep-feedback-score.neg{color:var(--red)}
-.rep-feedback-meta{color:var(--text2);line-height:1.6}
-.rep-feedback-tag{color:var(--moon2);letter-spacing:.5px}
-.rep-feedback-from{color:var(--text2);font-size:8px}
-.rep-source{font-size:8px;color:var(--text2);letter-spacing:1px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border2)}
-.rep-source a{color:var(--text2);text-decoration:none}.rep-source a:hover{color:var(--moon2)}
-/* recent activity mini */
-.recent-act-list{display:flex;flex-direction:column;gap:3px}
-.recent-act-item{display:flex;align-items:center;gap:8px;padding:9px 10px;background:rgba(236,232,232,.018);border-left:2px solid transparent;font-size:10px;cursor:pointer;transition:background .15s}
-.recent-act-item:hover{background:rgba(236,232,232,.04)}
-.recent-act-item.buy{border-left-color:var(--green)}.recent-act-item.sell{border-left-color:var(--red)}.recent-act-item.deploy{border-left-color:var(--yellow)}
-.recent-act-type{font-size:8px;font-weight:700;letter-spacing:1.5px;min-width:44px}
-.buy .recent-act-type{color:var(--green)}.sell .recent-act-type{color:var(--red)}.recent-act-item.deploy .recent-act-type{color:var(--yellow)}
-.recent-act-sym{color:var(--moon);min-width:60px}
-.recent-act-val{flex:1;text-align:right;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:600}
-.buy .recent-act-val{color:var(--green)}.sell .recent-act-val{color:var(--red)}.recent-act-item.deploy .recent-act-val{color:var(--yellow)}
-.recent-act-time{color:var(--text2);font-size:9px;min-width:28px;text-align:right}
-.recent-act-footer{margin-top:10px;text-align:right}
-.recent-act-footer a{font-size:9px;color:var(--text2);text-decoration:none;letter-spacing:1.5px;border:1px solid var(--border2);padding:4px 12px;transition:all .2s}
-.recent-act-footer a:hover{color:var(--moon);border-color:var(--border)}
-@media(max-width:700px){.erc8004-row{grid-template-columns:1fr}}
-
-/* ── ACCOUNT TYPE BANNER ── */
-.acct-banner{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--border2);margin-bottom:12px;background:rgba(236,232,232,.025)}
-.acct-banner.agent{border-color:rgba(111,207,122,.25);background:rgba(111,207,122,.04)}
-.acct-banner.non-agent{border-color:rgba(106,184,212,.2);background:rgba(106,184,212,.03)}
-.acct-banner-badge{font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;padding:3px 10px;border:1px solid;text-transform:uppercase;white-space:nowrap;margin-top:1px}
-.acct-banner.agent .acct-banner-badge{color:var(--green);border-color:var(--green);background:rgba(111,207,122,.1)}
-.acct-banner.non-agent .acct-banner-badge{color:var(--blue);border-color:var(--blue);background:rgba(106,184,212,.1)}
-.acct-banner-text{font-size:10px;color:var(--text2);line-height:1.7;letter-spacing:.5px}
-.acct-banner-text strong{color:var(--moon2);font-weight:normal}
-
-/* ── CREATED TOKENS TABLE ── */
-.ct-table{width:100%;border-collapse:collapse;font-size:10px}
-.ct-table th{font-size:8px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border2);text-align:left;font-weight:normal}
-.ct-table th:last-child,.ct-table td:last-child{text-align:right}
-.ct-table td{padding:10px 10px;border-bottom:1px solid rgba(46,44,45,.6);vertical-align:middle;color:var(--text2)}
-.ct-table tr:last-child td{border-bottom:none}
-.ct-table tbody tr{transition:background .15s;cursor:pointer}
-.ct-table tbody tr:hover{background:rgba(236,232,232,.04)}
-.ct-sym{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--moon);letter-spacing:.5px}
-.ct-name{font-size:9px;color:var(--text2);margin-top:2px;letter-spacing:.5px}
-.ct-addr{font-size:9px;color:var(--text2);font-family:'Share Tech Mono',monospace;letter-spacing:.5px}
-.ct-vol{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:600;color:var(--moon3)}
-.ct-reserve{font-size:10px;color:var(--text2)}
-.ct-status{font-size:8px;letter-spacing:1px;padding:2px 8px;border:1px solid;text-transform:uppercase;white-space:nowrap}
-.ct-status.bonding{color:var(--yellow);border-color:rgba(212,185,106,.3);background:rgba(212,185,106,.07)}
-.ct-status.graduated{color:var(--green);border-color:rgba(111,207,122,.3);background:rgba(111,207,122,.07)}
-.ct-pulse{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.4s infinite;margin-right:5px;vertical-align:middle;box-shadow:0 0 4px rgba(111,207,122,.6)}
-
-/* ── FOOTER ── */
-footer{border-top:1px solid var(--border);background:var(--panel);padding:32px 24px 20px;text-align:center;position:relative;z-index:1;margin-top:60px}
-.footer-logo{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--moon);text-shadow:var(--glow);letter-spacing:4px;margin-bottom:6px}
-.footer-tagline{font-size:10px;color:var(--text2);letter-spacing:3px;margin-bottom:18px}
-.footer-links{display:flex;justify-content:center;gap:20px;margin-bottom:18px;flex-wrap:wrap}
-.footer-links a{color:var(--text2);text-decoration:none;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
-.footer-links a:hover{color:var(--moon)}
-.footer-copy{font-size:9px;color:#3a3738;letter-spacing:1px}
-
-/* ── LOADING ── */
-.loading-skeleton{background:linear-gradient(90deg,rgba(236,232,232,.04) 25%,rgba(236,232,232,.08) 50%,rgba(236,232,232,.04) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;height:14px;margin-bottom:6px}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.loading-wrap{padding:20px}
-
-/* ── NOTIFY TOAST ── */
-#toast{position:fixed;bottom:24px;right:24px;background:var(--panel);border:1px solid var(--border);color:var(--moon2);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1.5px;padding:10px 20px;z-index:9000;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none}
-#toast.show{transform:translateY(0);opacity:1}
-
-/* ── RESPONSIVE ── */
-@media(max-width:900px){
-  .profile-body{grid-template-columns:1fr}
-  .profile-header{flex-wrap:wrap;gap:16px}
-  .profile-actions{flex-direction:row;align-items:center}
-  .agent-stats{flex-wrap:wrap}
-  .agent-stat{min-width:50%;border-bottom:1px solid var(--border2)}
-}
 @media(max-width:600px){
-  .nav-links{display:none}
-  .search-box{width:120px}
-  .profile-name{font-size:16px}
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .profile-address{font-size:11px}
+  .nav-search{display:none}
+  .token-table th:nth-child(3),.token-table td:nth-child(3){display:none}
 }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
-  <a href="/" class="nav-logo"><img src="/logo.png" alt="MegaClaw" style="width:36px;height:36px;border-radius:50%;object-fit:cover"></a>
+  <a class="nav-logo" href="/">
+    <img src="/logo.png" alt="MegaClaw" onerror="this.style.display='none'">
+    MEGACLAW
+  </a>
   <div class="nav-links">
     <a href="/feed">FEED</a>
     <a href="/docs">DOCS</a>
     <a href="/feed#leaderboard">LEADERBOARD</a>
   </div>
   <div class="nav-right">
-    <input class="search-box" type="text" placeholder="SEARCH AGENTS / TOKENS..." id="searchBox">
-    <button class="btn-connect" id="connectBtn">[ CONNECT ]</button>
+    <input class="nav-search" placeholder="Search profiles..." id="navSearch" autocomplete="off">
+    <button class="btn-connect" id="btnConnect" onclick="MC&&MC.openWalletModal()">CONNECT</button>
   </div>
 </nav>
 
-<!-- TICKER -->
-<div class="ticker-wrap"><div class="ticker-track" id="ticker"></div></div>
-
-<!-- MAIN -->
 <main>
-<div class="container">
-
-  <!-- BREADCRUMB -->
-  <div class="breadcrumb">
-    <a href="/">HOME</a>
-    <span class="breadcrumb-sep">/</span>
-    <a href="/feed">FEED</a>
-    <span class="breadcrumb-sep">/</span>
-    <span id="breadcrumbAddr">PROFILE</span>
-  </div>
+  <a class="back-link" href="/feed">Back to Feed</a>
 
   <!-- PROFILE HEADER -->
-  <div class="profile-header" id="profileHeader">
-    <div class="avatar-wrap">
-      <canvas class="avatar-canvas" id="avatarCanvas" width="88" height="88"></canvas>
-      <span class="avatar-badge" id="agentBadge">ACTIVE</span>
-    </div>
-    <div class="profile-info">
-      <div class="profile-name" id="profileName">Loading...</div>
-      <div class="profile-address">
-        <span id="addrDisplay">--</span>
-        <button class="copy-btn" onclick="copyAddress()">[ COPY ]</button>
-        <span id="ensName" style="color:var(--purple);display:none"></span>
+  <div class="profile-head">
+    <div class="profile-left">
+      <div class="profile-avatar" id="avatarEl">?</div>
+      <div class="profile-identity">
+        <div class="profile-address" id="addrEl">Loading...</div>
+        <div class="profile-meta">
+          <span class="profile-badge badge-user" id="agentBadge">USER</span>
+          <button class="copy-addr" id="copyBtn" onclick="copyAddress()">COPY</button>
+          <a class="explorer-link" id="explorerLink" href="#" target="_blank" rel="noopener">EXPLORER</a>
+        </div>
       </div>
-      <div class="profile-tags" id="profileTags">
-        <span class="tag registered">REGISTERED</span>
-        <span class="tag active">ACTIVE</span>
-      </div>
-      <div id="acctBanner" class="acct-banner" style="display:none"></div>
-      <div class="profile-bio" id="profileBio" style="display:none"></div>
-      <div class="profile-links">
-        <a href="#" class="profile-link explorer" id="explorerLink" target="_blank">[ EXPLORER ]</a>
-        <a href="#" class="profile-link" id="twitterLink" target="_blank" style="display:none">[ TWITTER ]</a>
-        <a href="#" class="profile-link" id="farcasterLink" target="_blank" style="display:none">[ FARCASTER ]</a>
-      </div>
-    </div>
-    <div class="profile-actions">
-      <button class="btn-follow" id="followBtn" onclick="toggleFollow()">[ FOLLOW ]</button>
-      <div class="joined-at" id="joinedAt">JOINED --</div>
     </div>
   </div>
 
-  <!-- ERC-8004 REPUTATION + RECENT ACTIVITY -->
-  <div class="erc8004-row">
-
-    <!-- ERC-8004 Reputation -->
-    <div class="erc8004-panel">
-      <div class="erc8004-header">
-        <div class="erc8004-title">
-          ERC-8004 Reputation
-          <a href="https://eips.ethereum.org/EIPS/eip-8004" target="_blank" class="erc8004-spec-link">[SPEC]</a>
-        </div>
-        <div class="erc8004-badge" id="erc8004Badge">DRAFT</div>
-      </div>
-      <div id="erc8004Content">
-        <div class="erc8004-empty">
-          <div class="erc8004-empty-icon">[ ]</div>
-          <div>No ERC-8004 reputation data is available for this profile yet.</div>
-        </div>
-      </div>
+  <!-- STAT CARDS -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Volume</div>
+      <div class="stat-value yellow" id="statVol">—</div>
+      <div class="stat-sub" id="statVolSub">all time</div>
     </div>
-
-    <!-- Recent Activity -->
-    <div class="erc8004-panel">
-      <div class="erc8004-header">
-        <div class="erc8004-title">Recent Activity</div>
-        <div class="erc8004-badge live-badge" id="recentActivityBadge"><span class="ct-pulse"></span>LIVE</div>
-      </div>
-      <div id="recentActivityContent">
-        <div class="erc8004-empty">
-          <div class="erc8004-empty-icon">[ ]</div>
-          <div>No recent trades available.</div>
-        </div>
-      </div>
+    <div class="stat-card">
+      <div class="stat-label">Tokens Deployed</div>
+      <div class="stat-value" id="statTokens">—</div>
     </div>
-
-  </div>
-
-  <!-- AGENT STATS BAR -->
-  <div class="agent-stats">
-    <div class="agent-stat">
-      <div class="agent-stat-label">24h Volume</div>
-      <div class="agent-stat-value" id="stat24hVol">--</div>
-      <div class="agent-stat-sub" id="stat24hVolSub">loading...</div>
+    <div class="stat-card">
+      <div class="stat-label">Total Trades</div>
+      <div class="stat-value" id="statTrades">—</div>
     </div>
-    <div class="agent-stat">
-      <div class="agent-stat-label">Total Volume</div>
-      <div class="agent-stat-value yellow" id="statTotalVol">--</div>
-      <div class="agent-stat-sub" id="statTotalVolSub">all time</div>
-    </div>
-    <div class="agent-stat">
-      <div class="agent-stat-label">PnL (all time)</div>
-      <div class="agent-stat-value green" id="statPnl">--</div>
-      <div class="agent-stat-sub" id="statPnlSub">unrealized + realized</div>
-    </div>
-    <div class="agent-stat">
-      <div class="agent-stat-label">Tokens Deployed</div>
-      <div class="agent-stat-value purple" id="statDeployed">--</div>
-      <div class="agent-stat-sub" id="statDeployedSub">on MegaETH</div>
-    </div>
-    <div class="agent-stat">
-      <div class="agent-stat-label">Total Trades</div>
-      <div class="agent-stat-value" id="statTrades">--</div>
-      <div class="agent-stat-sub" id="statTradesSub">buy + sell</div>
-    </div>
-    <div class="agent-stat">
-      <div class="agent-stat-label">Win Rate</div>
-      <div class="agent-stat-value green" id="statWinRate">--</div>
-      <div class="agent-stat-sub">profitable trades</div>
+    <div class="stat-card">
+      <div class="stat-label">Fees Earned</div>
+      <div class="stat-value green" id="statFees">—</div>
+      <div class="stat-sub">80% of 1% buy fee</div>
     </div>
   </div>
 
-  <!-- BODY GRID -->
-  <div class="profile-body">
+  <!-- TOKENS DEPLOYED -->
+  <div class="section">
+    <div class="section-title">Tokens Deployed</div>
+    <div id="tokensWrap"><div class="spinner">LOADING</div></div>
+  </div>
 
-    <!-- MAIN COL -->
-    <div class="main-col">
-
-      <!-- PNL CHART -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">PnL Chart</span>
-          <div class="chart-range">
-            <button class="range-btn active" onclick="setRange(this,'1D')">1D</button>
-            <button class="range-btn" onclick="setRange(this,'7D')">7D</button>
-            <button class="range-btn" onclick="setRange(this,'30D')">30D</button>
-            <button class="range-btn" onclick="setRange(this,'ALL')">ALL</button>
-          </div>
-        </div>
-        <div class="chart-area">
-          <svg class="chart-svg" id="pnlChart" viewBox="0 0 600 140" preserveAspectRatio="none"></svg>
-          <div class="chart-label">CUMULATIVE PNL (ETH)</div>
-        </div>
-        <div style="display:flex;gap:24px;font-size:10px;color:var(--text2)">
-          <span>REALIZED: <span style="color:var(--green)" id="realizedPnl">+0.000 ETH</span></span>
-          <span>UNREALIZED: <span style="color:var(--yellow)" id="unrealizedPnl">+0.000 ETH</span></span>
-          <span>FEES PAID: <span id="feesPaid">0.000 ETH</span></span>
-        </div>
-      </div>
-
-      <!-- TRADE ACTIVITY -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Trade Activity</span>
-          <span class="panel-badge live"><span class="live-dot"></span>LIVE</span>
-        </div>
-        <div class="filter-row">
-          <button class="filter-btn active" onclick="filterActivity(this,'all')">ALL</button>
-          <button class="filter-btn buy" onclick="filterActivity(this,'buy')">BUY</button>
-          <button class="filter-btn sell" onclick="filterActivity(this,'sell')">SELL</button>
-          <button class="filter-btn deploy" onclick="filterActivity(this,'deploy')">DEPLOY</button>
-          <button class="filter-btn" onclick="filterActivity(this,'transfer')">TRANSFER</button>
-        </div>
-        <div class="activity-list" id="activityList">
-          <div class="loading-wrap">
-            <div class="loading-skeleton" style="width:80%"></div>
-            <div class="loading-skeleton" style="width:65%"></div>
-            <div class="loading-skeleton" style="width:72%"></div>
-          </div>
-        </div>
-        <div style="text-align:center;margin-top:16px">
-          <button class="filter-btn" id="loadMoreBtn" onclick="loadMore()" style="padding:8px 24px;letter-spacing:2px">LOAD MORE</button>
-        </div>
-      </div>
-
-    </div><!-- /main-col -->
-
-    <!-- SIDE COL -->
-    <div class="side-col">
-
-      <!-- QUICK STATS -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Quick Stats</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px" id="quickStats">
-          <div class="mini-stat">
-            <span class="mini-stat-label">Avg Buy Size</span>
-            <span class="mini-stat-val yellow" id="avgBuy">-- ETH</span>
-          </div>
-          <div class="mini-stat">
-            <span class="mini-stat-label">Avg Hold Time</span>
-            <span class="mini-stat-val" id="avgHold">--</span>
-          </div>
-          <div class="mini-stat">
-            <span class="mini-stat-label">Largest Trade</span>
-            <span class="mini-stat-val green" id="largestTrade">-- ETH</span>
-          </div>
-          <div class="mini-stat">
-            <span class="mini-stat-label">Best Trade PnL</span>
-            <span class="mini-stat-val green" id="bestTrade">-- ETH</span>
-          </div>
-          <div class="mini-stat">
-            <span class="mini-stat-label">Tokens Launched</span>
-            <span class="mini-stat-val yellow" id="tokensLaunched">--</span>
-          </div>
-          <div class="mini-stat">
-            <span class="mini-stat-label">Tokens Graduated</span>
-            <span class="mini-stat-val green" id="tokensGraduated">--</span>
-          </div>
-        </div>
-        <!-- Activity breakdown -->
-        <div style="margin-top:18px">
-          <div class="prog-row">
-            <div class="prog-label"><span>BUY</span><span id="buyPct">--</span></div>
-            <div class="prog-bar"><div class="prog-fill green" id="buyBar" style="width:0%"></div></div>
-          </div>
-          <div class="prog-row">
-            <div class="prog-label"><span>SELL</span><span id="sellPct">--</span></div>
-            <div class="prog-bar"><div class="prog-fill" id="sellBar" style="width:0%"></div></div>
-          </div>
-          <div class="prog-row">
-            <div class="prog-label"><span>DEPLOY</span><span id="deployPct">--</span></div>
-            <div class="prog-bar"><div class="prog-fill yellow" id="deployBar" style="width:0%"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CREATED TOKENS TABLE -->
-      <div class="panel" id="createdTokensPanel">
-        <div class="panel-header">
-          <span class="panel-title">Created Tokens</span>
-          <span class="panel-badge live" id="deployedCount"><span class="ct-pulse"></span><span id="deployedCountNum">0</span></span>
-        </div>
-        <div id="createdTokensWrap">
-          <div class="empty-state">
-            <div class="empty-icon">[ ]</div>
-            <div class="empty-msg">No deployed tokens found for this wallet yet.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- HOLDINGS -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Holdings</span>
-          <span class="panel-badge" id="holdingsCount">0</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:2px" id="holdingsList">
-          <div class="empty-state">
-            <div class="empty-icon">[ ]</div>
-            <div class="empty-msg">No holdings found</div>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /side-col -->
-
-  </div><!-- /profile-body -->
-
-</div><!-- /container -->
+  <!-- ACTIVITY -->
+  <div class="section">
+    <div class="section-title">Recent Activity</div>
+    <div id="activityWrap"><div class="spinner">LOADING</div></div>
+    <button class="load-more" id="loadMoreBtn" onclick="loadMoreActivity()" style="display:none">LOAD MORE</button>
+  </div>
 </main>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-logo"><img src="/logo.png" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px"> MEGACLAW</div>
-  <div class="footer-tagline">// AI AGENT TOKEN LAUNCHPAD ON MEGAETH //</div>
-  <div class="footer-links">
-    <a href="/">HOME</a>
-    <a href="/feed">FEED</a>
-    <a href="/docs">DOCS</a>
-    <a href="/feed#leaderboard">LEADERBOARD</a>
-    <a href="https://mega.etherscan.io" target="_blank">EXPLORER</a>
-  </div>
-  <div class="footer-copy">MEGACLAW.IO &mdash; BUILT ON MEGAETH &mdash; CHAIN ID 4326</div>
-</footer>
-
-<!-- TOAST -->
-<div id="toast"></div>
-
+<script src="/wallet.js" defer></script>
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────────────────
-const API      = 'https://megaclaws-production.up.railway.app';
+const API = 'https://megaclaws-production.up.railway.app';
 const EXPLORER = 'https://mega.etherscan.io';
 
-// ── PARSE WALLET ADDRESS FROM URL PATH ──────────────────────────────────────
-function getWalletAddress() {
-  const path = window.location.pathname;
-  const m = path.match(/\/profile\/?(0x[0-9a-fA-F]{40})/i);
-  if (m) return m[1].toLowerCase();
-  const q = new URLSearchParams(window.location.search).get('address');
-  if (q && /^0x[0-9a-fA-F]{40}$/i.test(q)) return q.toLowerCase();
+// ── resolve address from URL ─────────────────────────────────────
+function resolveAddress() {
+  // support /profile/0x... (via 404.html SPA redirect) or ?address=0x...
+  const params = new URLSearchParams(location.search);
+  const fromParam = params.get('address') || params.get('a');
+  if (fromParam && /^0x[0-9a-fA-F]{40}$/.test(fromParam)) return fromParam.toLowerCase();
+  // try to extract from path directly (/profile/0x...)
+  const m = location.pathname.match(/0x[0-9a-fA-F]{40}/i);
+  if (m) return m[0].toLowerCase();
   return null;
 }
 
-const WALLET = getWalletAddress();
+const ADDR = resolveAddress();
+let ethPrice = 0;
+let activityPage = 0;
+let beforeTs = null;
+let hasMoreActivity = false;
 
-// ── BLOCKY AVATAR (pure canvas, no lib) ─────────────────────────────────────
-function generateAvatar(address, canvas) {
-  if (!address) return;
-  const addr = address.replace('0x','').toLowerCase();
-  const ctx = canvas.getContext('2d');
-  const size = 5;
-  const scale = canvas.width / size;
-  // derive colors from address
-  const h = parseInt(addr.slice(0,6), 16) % 360;
-  const s = 40 + parseInt(addr.slice(6,8), 16) % 40;
-  const l = 30 + parseInt(addr.slice(8,10), 16) % 30;
-  const bg = `hsl(${h},${s}%,${l}%)`;
-  const fg = `hsl(${(h+180)%360},${s}%,${l+20}%)`;
-  ctx.fillStyle = '#19191a';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  // 5x5 symmetric pattern
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < Math.ceil(size/2); x++) {
-      const idx = (y * size + x) * 2;
-      const v = parseInt(addr[(idx % (addr.length-1)) || 0] || '0', 16);
-      const color = v > 7 ? fg : bg;
-      ctx.fillStyle = color;
-      ctx.fillRect(x*scale, y*scale, scale, scale);
-      ctx.fillRect((size-1-x)*scale, y*scale, scale, scale);
-    }
-  }
-  // border glow
-  ctx.strokeStyle = 'rgba(236,232,232,0.15)';
-  ctx.strokeRect(0,0,canvas.width,canvas.height);
-}
-
-// ── SHORTENED ADDRESS ────────────────────────────────────────────────────────
-function shortAddr(addr) {
-  if (!addr) return '--';
-  return addr.slice(0,6) + '...' + addr.slice(-4);
-}
-
-// ── COPY ADDRESS ─────────────────────────────────────────────────────────────
-function copyAddress() {
-  if (!WALLET) return;
-  navigator.clipboard.writeText(WALLET).then(() => showToast('ADDRESS COPIED'));
-}
-
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
-}
-
-// ── FOLLOW TOGGLE ─────────────────────────────────────────────────────────────
-let following = false;
-function toggleFollow() {
-  following = !following;
-  const btn = document.getElementById('followBtn');
-  btn.textContent = following ? '[ FOLLOWING ]' : '[ FOLLOW ]';
-  btn.classList.toggle('following', following);
-  showToast(following ? 'FOLLOWING AGENT' : 'UNFOLLOWED');
-}
-
-// ── CHART RANGE ───────────────────────────────────────────────────────────────
-function setRange(btn, range) {
-  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  drawChart(range);
-}
-
-// ── STATE ─────────────────────────────────────────────────────────────────────────────
-let allActivity   = [];
-let currentFilter = 'all';
-let displayCount  = 15;
-let beforeTs      = null;
-let loadingMore   = false;
-let wsProfile     = null;
-let ethPrice      = 0;
-
-// ── RENDER PROFILE ─────────────────────────────────────────────────────────────
-
-function renderProfile(data) {
-  const addr = data.address || WALLET || '0x0000000000000000000000000000000000000000';
-
-  // avatar
-  generateAvatar(addr, document.getElementById('avatarCanvas'));
-
-  // breadcrumb + title
-  document.getElementById('breadcrumbAddr').textContent = shortAddr(addr).toUpperCase();
-  document.title = `${shortAddr(addr)} | MegaClaw.io`;
-
-  // header
-  document.getElementById('profileName').textContent = data.name || 'UNKNOWN_AGENT';
-  document.getElementById('addrDisplay').textContent = addr;
-
-  // tags
-  const tags = document.getElementById('profileTags');
-  tags.innerHTML = '';
-  const addTag = (cls,txt) => { const s=document.createElement('span');s.className=`tag ${cls}`;s.textContent=txt;tags.appendChild(s); };
-  addTag('registered','REGISTERED');
-  addTag('active','ACTIVE');
-  if (data.deployed > 0) addTag('deployer','DEPLOYER');
-  if (parseFloat(data.totalVol) > 50) addTag('whale','WHALE');
-
-  // explorer link
-  document.getElementById('explorerLink').href = `${EXPLORER}/address/${addr}`;
-
-  // joined
-  document.getElementById('joinedAt').textContent = 'JOINED ' + (data.joined || '--');
-
-  // stats bar
-  const pnlEl = document.getElementById('statPnl');
-  pnlEl.textContent = (parseFloat(data.pnl) >= 0 ? '+' : '') + data.pnl + ' ETH';
-  pnlEl.className = 'agent-stat-value ' + (parseFloat(data.pnl) >= 0 ? 'green' : 'red');
-
-  document.getElementById('stat24hVol').textContent = data.vol24h + ' ETH';
-  document.getElementById('stat24hVolSub').textContent = 'last 24 hours';
-  document.getElementById('statTotalVol').textContent = data.totalVol + ' ETH';
-  document.getElementById('statDeployed').textContent = data.deployed;
-  document.getElementById('statTrades').textContent = data.trades;
-  document.getElementById('statTradesSub').textContent = data.buyCount + 'B / ' + data.sellCount + 'S';
-  document.getElementById('statWinRate').textContent = data.winRate + '%';
-  const wr = document.getElementById('statWinRate');
-  wr.className = 'agent-stat-value ' + (parseFloat(data.winRate) >= 50 ? 'green' : 'red');
-
-  // quick stats
-  document.getElementById('avgBuy').textContent = data.avgBuy + ' ETH';
-  document.getElementById('avgHold').textContent = data.avgHold;
-  document.getElementById('largestTrade').textContent = data.largestTrade + ' ETH';
-  document.getElementById('bestTrade').textContent = data.bestTrade + ' ETH';
-  document.getElementById('tokensLaunched').textContent = data.deployed;
-  document.getElementById('tokensGraduated').textContent = data.graduated;
-  document.getElementById('realizedPnl').textContent = data.realized + ' ETH';
-  document.getElementById('unrealizedPnl').textContent = data.unrealized + ' ETH';
-  document.getElementById('feesPaid').textContent = data.fees + ' ETH';
-
-  // activity breakdown bars
-  const total = data.buyCount + data.sellCount + data.deployCount;
-  const buyP = total ? Math.round(data.buyCount/total*100) : 0;
-  const sellP = total ? Math.round(data.sellCount/total*100) : 0;
-  const depP = total ? Math.round(data.deployCount/total*100) : 0;
-  document.getElementById('buyPct').textContent = buyP + '%';
-  document.getElementById('sellPct').textContent = sellP + '%';
-  document.getElementById('deployPct').textContent = depP + '%';
-  setTimeout(() => {
-    document.getElementById('buyBar').style.width = buyP + '%';
-    document.getElementById('sellBar').style.width = sellP + '%';
-    document.getElementById('deployBar').style.width = depP + '%';
-  }, 200);
-
-  // deployed tokens
-  allActivity = data.activity || [];
-  renderDeployedTokens(data.deployedTokens || []);
-  renderHoldings(data.holdings || []);
-  renderActivity();
-  drawChart('1D', data.pnlSeries);
-}
-
-// ── DEPLOYED TOKENS ──────────────────────────────────────────────────────────
-// ── CREATED TOKENS TABLE ─────────────────────────────────────────────────────
-function renderCreatedTokens(tokens) {
-  const wrap     = document.getElementById('createdTokensWrap');
-  const countNum = document.getElementById('deployedCountNum');
-  if (countNum) countNum.textContent = tokens.length;
-
-  if (!tokens.length) {
-    wrap.innerHTML = `
-      <div class="empty-state" style="padding:32px 20px">
-        <div class="empty-icon">[ ]</div>
-        <div class="empty-msg">No deployed tokens found for this wallet yet.</div>
-      </div>`;
-    return;
-  }
-
-  wrap.innerHTML = `
-    <div style="overflow-x:auto">
-      <table class="ct-table">
-        <thead>
-          <tr>
-            <th>Token</th>
-            <th>Address</th>
-            <th>24h Vol</th>
-            <th>Reserve</th>
-            <th>Trades</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="ctTableBody">
-          ${tokens.map(t => ctRowHTML(t)).join('')}
-        </tbody>
-      </table>
-    </div>`;
-
-  // Bind row clicks
-  tokens.forEach(t => {
-    const row = document.getElementById('ct-row-' + (t.address||t.addr));
-    if (row) row.addEventListener('click', () => {
-      window.open(`${EXPLORER}/address/${t.address||t.addr}`, '_blank');
-    });
-  });
-}
-
-function ctRowHTML(t) {
-  const addr     = t.address || t.addr || '';
-  const sym      = t.symbol  || t.sym  || '???';
-  const name     = t.name    || sym;
-  const vol24h   = fmtUsd(t.vol24hEth || t.vol || 0);
-  const reserve  = parseFloat(t.reserveEth || 0).toFixed(4);
-  const trades   = t.tradeCount || t.trades || 0;
-  const migrated = t.migrated;
-  const created  = t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '--';
-
-  return `
-    <tr id="ct-row-${addr}" title="Deployed ${created}">
-      <td>
-        <div class="ct-sym">$${sym}</div>
-        <div class="ct-name">${name}</div>
-      </td>
-      <td><span class="ct-addr">${shortAddr(addr)}</span></td>
-      <td><span class="ct-vol">${vol24h}</span></td>
-      <td><span class="ct-reserve">${reserve} ETH</span></td>
-      <td style="color:var(--moon2)">${trades}</td>
-      <td>
-        <span class="ct-status ${migrated?'graduated':'bonding'}">
-          ${migrated ? 'GRADUATED' : 'BONDING'}
-        </span>
-      </td>
-    </tr>`;
-}
-
-// keep old name as alias (called from init)
-function renderDeployedTokens(tokens) {
-  renderCreatedTokens(tokens);
-}
-
-// ── HOLDINGS ─────────────────────────────────────────────────────────────────
-function renderHoldings(holdings) {
-  const el = document.getElementById('holdingsList');
-  const countEl = document.getElementById('holdingsCount');
-  countEl.textContent = holdings.length;
-  if (!holdings.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">[ ]</div><div class="empty-msg">No holdings found</div></div>`;
-    return;
-  }
-  el.innerHTML = holdings.map((h, i) => `
-    <div class="holding-item">
-      <div class="hold-rank">${i+1}</div>
-      <div class="hold-info">
-        <div class="hold-name">${h.name}</div>
-        <div class="hold-qty">${parseInt(h.qty).toLocaleString()} TOKENS</div>
-      </div>
-      <div class="hold-val">
-        <div class="hold-eth">${h.ethVal} ETH</div>
-        <div class="hold-pnl ${parseFloat(h.pnl)>=0?'up':'down'}">${parseFloat(h.pnl)>=0?'+':''}${h.pnl}%</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── ACTIVITY ──────────────────────────────────────────────────────────────────
-function filterActivity(btn, type) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentFilter = type;
-  displayCount = 15;
-  renderActivity();
-}
-
-async function loadMore() {
-  const filtered = currentFilter === 'all'
-    ? allActivity
-    : allActivity.filter(a => a.type === currentFilter);
-
-  if (displayCount < filtered.length) {
-    // Still have local items to show
-    displayCount += 15;
-    renderActivity();
-    return;
-  }
-
-  // Need to fetch more from API
-  if (!beforeTs || loadingMore) return;
-  loadingMore = true;
-  const btn = document.getElementById('loadMoreBtn');
-  if (btn) btn.textContent = 'LOADING...';
-
-  try {
-    const data = await fetchActivity(beforeTs, currentFilter, 40);
-    const newEvents = (data.events || []).map(normalizeEvent);
-    allActivity = allActivity.concat(newEvents);
-    beforeTs    = data.nextBefore || null;
-    displayCount += newEvents.length;
-  } catch(_) {}
-
-  loadingMore = false;
-  if (btn) btn.textContent = 'LOAD MORE';
-  renderActivity();
-}
-
-function timeAgo(ts) {
-  const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return s + 's';
-  if (s < 3600) return Math.floor(s/60) + 'm';
-  if (s < 86400) return Math.floor(s/3600) + 'h';
-  return Math.floor(s/86400) + 'd';
-}
-
-function renderActivity() {
-  const el = document.getElementById('activityList');
-  const items = currentFilter === 'all'
-    ? allActivity
-    : allActivity.filter(a => a.type === currentFilter);
-  const shown = items.slice(0, displayCount);
-
-  if (!shown.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">[ ]</div><div class="empty-msg">No ${currentFilter === 'all' ? '' : currentFilter + ' '}activity</div></div>`;
-    return;
-  }
-
-  el.innerHTML = shown.map(a => {
-    const valStr = a.type === 'buy' ? `+${a.val} ETH`
-      : a.type === 'sell' ? `${a.val} ETH`
-      : a.type === 'deploy' ? 'DEPLOYED'
-      : a.val + ' ETH';
-    const detail = a.type === 'buy' ? `bought ${a.tok}` :
-                   a.type === 'sell' ? `sold ${a.tok}` :
-                   a.type === 'deploy' ? `launched $${a.sym}` :
-                   `transfer ${a.tok}`;
-    return `<div class="activity-item ${a.type}">
-      <span class="act-type">${a.type.toUpperCase()}</span>
-      <span class="act-token">$${a.sym}</span>
-      <span class="act-details">${detail}</span>
-      <span class="act-val">${valStr}</span>
-      <a class="act-tx" href="${EXPLORER}/tx/${a.txHash}" target="_blank">[TX]</a>
-      <span class="act-time">${timeAgo(a.ts)}</span>
-    </div>`;
-  }).join('');
-
-  // Show load-more if more local items OR server has more (beforeTs set)
-  const hasMore = items.length > displayCount || !!beforeTs;
-  document.getElementById('loadMoreBtn').style.display = hasMore ? 'block' : 'none';
-}
-
-// ── PNL CHART ────────────────────────────────────────────────────────────────
-let pnlData = [];
-
-function drawChart(range, data) {
-  if (data) pnlData = data;
-  const svg = document.getElementById('pnlChart');
-  const pts = pnlData;
-  if (!pts || pts.length < 2) { svg.innerHTML = ''; return; }
-
-  const minY = Math.min(...pts.map(p=>p.y));
-  const maxY = Math.max(...pts.map(p=>p.y));
-  const rangeY = maxY - minY || 1;
-  const W = 600, H = 140, PAD = 16;
-
-  const xs = pts.map((p,i) => PAD + (i/(pts.length-1)) * (W - PAD*2));
-  const ys = pts.map(p => H - PAD - ((p.y - minY) / rangeY) * (H - PAD*2));
-
-  const path = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
-  const fill = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ')
-    + ` L${xs[xs.length-1]},${H} L${xs[0]},${H} Z`;
-
-  const isPositive = pts[pts.length-1].y >= pts[0].y;
-  const col = isPositive ? '#6fcf7a' : '#e07070';
-  const colFade = isPositive ? 'rgba(111,207,122,0)' : 'rgba(224,112,112,0)';
-  const colSolid = isPositive ? 'rgba(111,207,122,0.15)' : 'rgba(224,112,112,0.15)';
-
-  svg.innerHTML = `
-    <defs>
-      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${colSolid}"/>
-        <stop offset="100%" stop-color="${colFade}"/>
-      </linearGradient>
-    </defs>
-    <path d="${fill}" fill="url(#chartGrad)" stroke="none"/>
-    <path d="${path}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
-    <line x1="${xs[xs.length-1]}" y1="${ys[ys.length-1]}" x2="${W-PAD}" y2="${ys[ys.length-1]}" stroke="${col}" stroke-width="1" stroke-dasharray="3,3" opacity=".4"/>
-    <circle cx="${xs[xs.length-1]}" cy="${ys[ys.length-1]}" r="3" fill="${col}" opacity=".9"/>
-  `;
-}
-
-// ── TICKER ────────────────────────────────────────────────────────────────────
-function buildTicker() {
-  const items = [
-    {type:'buy',  sym:'VOID',  val:'0.42 ETH'},
-    {type:'sell', sym:'NEON',  val:'1.28 ETH'},
-    {type:'buy',  sym:'FLUX',  val:'0.09 ETH'},
-    {type:'deploy',sym:'APEX', val:'NEW TOKEN'},
-    {type:'buy',  sym:'ZETA',  val:'0.77 ETH'},
-    {type:'sell', sym:'NOVA',  val:'0.33 ETH'},
-    {type:'buy',  sym:'GRIM',  val:'2.10 ETH'},
-    {type:'deploy',sym:'BYTE', val:'NEW TOKEN'},
-    {type:'sell', sym:'PULSAR',val:'0.56 ETH'},
-    {type:'buy',  sym:'HAZE',  val:'0.18 ETH'},
-  ];
-  const doubled = [...items,...items];
-  const track = document.getElementById('ticker');
-  track.innerHTML = doubled.map(t => `
-    <span class="tick-item ${t.type}">
-      ${t.type==='buy'?'BUY':t.type==='sell'?'SELL':'DEPLOY'} &nbsp;$${t.sym}&nbsp; ${t.val}
-    </span>
-  `).join('');
-}
-
-// ── SEARCH ────────────────────────────────────────────────────────────────────
-document.getElementById('searchBox').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const v = e.target.value.trim();
-    if (/^0x[0-9a-fA-F]{40}$/i.test(v)) {
-      window.location.href = `/profile/${v.toLowerCase()}`;
-    } else {
-      showToast('ENTER A VALID 0x ADDRESS');
-    }
-  }
-});
-
-// ── CONNECT WALLET ────────────────────────────────────────────────────────────
-// wallet handled by wallet.js
-
-// ── ERC-8004 REPUTATION ───────────────────────────────────────────────────────────────────────
-// ERC-8004 is a DRAFT EIP (2025-08-13) for Trustless Agents.
-// Reputation Registry interface: giveFeedback / NewFeedback event
-// Since no known contracts are deployed on MegaETH yet, we gracefully try
-// known mainnet/L2 addresses and fall back to empty state.
-
-// Known ERC-8004 Reputation Registry deployments (add when available)
-const ERC8004_REGISTRIES = [
-  // { chain: 'MegaETH', chainId: 4326, rpc: 'https://mainnet.megaeth.com/rpc', address: '0x...' },
-  // { chain: 'Ethereum', chainId: 1, rpc: 'https://ethereum-rpc.publicnode.com', address: '0x...' },
-];
-
-const ERC8004_REP_ABI = [
-  'event NewFeedback(uint256 indexed agentId, address indexed clientAddress, uint64 feedbackIndex, int128 value, uint8 valueDecimals, string indexed indexedTag1, string tag1, string tag2, string endpoint, string feedbackURI, bytes32 feedbackHash)',
-  'function getIdentityRegistry() external view returns (address)',
-];
-const ERC8004_ID_ABI = [
-  'function getAgentWallet(uint256 agentId) external view returns (address)',
-  'event Registered(uint256 indexed agentId, string agentURI, address indexed owner)',
-];
-
-async function fetchERC8004Reputation(walletAddr) {
-  // Try each known registry
-  for (const reg of ERC8004_REGISTRIES) {
-    try {
-      const provider = new ethers.JsonRpcProvider(reg.rpc);
-      const repContract = new ethers.Contract(reg.address, ERC8004_REP_ABI, provider);
-      // Query NewFeedback events where clientAddress matches wallet
-      const filter = repContract.filters.NewFeedback(null, walletAddr);
-      const logs   = await repContract.queryFilter(filter, -50000);
-      if (logs.length > 0) return { registry: reg, logs, source: 'chain' };
-    } catch(_) {}
-  }
-  return null;
-}
-
-function renderERC8004(data) {
-  const el = document.getElementById('erc8004Content');
-  if (!el) return;
-
-  if (!data) {
-    el.innerHTML = `
-      <div class="erc8004-empty">
-        <div class="erc8004-empty-icon">[ ]</div>
-        <div>No ERC-8004 reputation data is available for this profile yet.</div>
-      </div>
-      <div class="rep-source">
-        Standard: <a href="https://eips.ethereum.org/EIPS/eip-8004" target="_blank">ERC-8004 Trustless Agents [DRAFT]</a>
-        &nbsp;&middot;&nbsp; Reputation Registry not yet deployed on MegaETH
-      </div>`;
-    return;
-  }
-
-  // If we have data (future use when contracts are deployed)
-  const { logs, registry } = data;
-  const badge = document.getElementById('erc8004Badge');
-  if (badge) { badge.textContent = registry.chain; badge.style.color = 'var(--green)'; badge.style.borderColor = 'rgba(111,207,122,.3)'; }
-
-  // Aggregate score metrics by tag1
-  const byTag = {};
-  for (const log of logs) {
-    const tag = log.args.tag1 || 'general';
-    const val = Number(log.args.value) / Math.pow(10, Number(log.args.valueDecimals));
-    if (!byTag[tag]) byTag[tag] = { sum: 0, count: 0 };
-    byTag[tag].sum += val; byTag[tag].count++;
-  }
-
-  const metrics = Object.entries(byTag).slice(0, 4).map(([tag, d]) => {
-    const avg = (d.sum / d.count).toFixed(1);
-    const cls = parseFloat(avg) >= 70 ? 'good' : parseFloat(avg) >= 40 ? 'mid' : 'bad';
-    return `<div class="rep-metric">
-      <div class="rep-metric-label">${tag}</div>
-      <div class="rep-metric-val ${cls}">${avg}</div>
-      <div class="rep-metric-sub">${d.count} feedback(s)</div>
-    </div>`;
-  }).join('');
-
-  const feedbacks = logs.slice(-5).reverse().map(log => {
-    const val = Number(log.args.value) / Math.pow(10, Number(log.args.valueDecimals));
-    const cls = val >= 0 ? 'pos' : 'neg';
-    const from = (log.args.clientAddress || '').slice(0,6) + '...' + (log.args.clientAddress || '').slice(-4);
-    return `<div class="rep-feedback-item ${cls}">
-      <span class="rep-feedback-score ${cls}">${val >= 0 ? '+' : ''}${val.toFixed(1)}</span>
-      <div class="rep-feedback-meta">
-        <span class="rep-feedback-tag">${log.args.tag1 || 'general'}</span>
-        ${log.args.tag2 ? ' &middot; ' + log.args.tag2 : ''}
-        <br><span class="rep-feedback-from">from ${from}</span>
-      </div>
-    </div>`;
-  }).join('');
-
-  el.innerHTML = `
-    <div class="rep-grid">${metrics || '<div style="grid-column:1/-1;color:var(--text2);font-size:10px;text-align:center;padding:8px">No score metrics</div>'}</div>
-    <div class="rep-feedback-list">${feedbacks}</div>
-    <div class="rep-source">
-      Registry: <a href="${EXPLORER}/address/${registry.address}" target="_blank">${registry.chain}</a>
-      &nbsp;&middot;&nbsp; <a href="https://eips.ethereum.org/EIPS/eip-8004" target="_blank">ERC-8004 Spec</a>
-    </div>`;
-}
-
-// ── RECENT ACTIVITY (mini) ────────────────────────────────────────────────────
-async function fetchRecentActivity() {
-  try {
-    const res = await fetch(`${API}/api/feed?address=${WALLET}&limit=5&type=all`);
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    return (data.events || []).map(normalizeEvent);
-  } catch(_) { return []; }
-}
-
-function renderRecentActivity(events) {
-  const el = document.getElementById('recentActivityContent');
-  if (!el) return;
-  if (!events || !events.length) {
-    el.innerHTML = `
-      <div class="erc8004-empty">
-        <div class="erc8004-empty-icon">[ ]</div>
-        <div>No recent trades available.</div>
-      </div>`;
-    return;
-  }
-  const rows = events.map(ev => {
-    const valStr = ev.type === 'buy'  ? '+' + parseFloat(ev.val||0).toFixed(4) + ' ETH'
-                 : ev.type === 'sell' ? '-' + parseFloat(ev.val||0).toFixed(4) + ' ETH'
-                 : 'DEPLOYED';
-    const txUrl = ev.txHash ? `${EXPLORER}/tx/${ev.txHash}` : '#';
-    return `
-      <div class="recent-act-item ${ev.type}" onclick="window.open('${txUrl}','_blank')">
-        <span class="recent-act-type">${ev.type.toUpperCase()}</span>
-        <span class="recent-act-sym">$${ev.sym}</span>
-        <span class="recent-act-val">${valStr}</span>
-        <span class="recent-act-time">${timeAgo(ev.ts)}</span>
-      </div>`;
-  }).join('');
-  el.innerHTML = `
-    <div class="recent-act-list">${rows}</div>
-    <div class="recent-act-footer">
-      <a href="/feed#${WALLET}">VIEW ALL ACTIVITY →</a>
-    </div>`;
-}
-
-// ── ETH PRICE ────────────────────────────────────────────────────────────────────────────────
+// ── ETH price ────────────────────────────────────────────────────
 async function fetchEthPrice() {
   try {
-    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-    if (r.ok) { const d = await r.json(); ethPrice = d.ethereum?.usd || 0; }
-  } catch(_) {
-    try {
-      const r = await fetch('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD');
-      if (r.ok) { const d = await r.json(); ethPrice = d.USD || 0; }
-    } catch(__) {}
-  }
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',{signal:AbortSignal.timeout(5000)});
+    const d = await r.json();
+    ethPrice = d?.ethereum?.usd || 0;
+  } catch {}
 }
+
 function fmtUsd(eth) {
-  const usd = parseFloat(eth || 0) * ethPrice;
-  if (!usd || !ethPrice) return parseFloat(eth || 0).toFixed(4) + ' ETH';
-  if (usd >= 1000000) return '$' + (usd/1000000).toFixed(2) + 'M';
-  if (usd >= 1000)    return '$' + (usd/1000).toFixed(1) + 'K';
+  if (!ethPrice || !eth) return '—';
+  const usd = parseFloat(eth) * ethPrice;
+  if (usd >= 1e6) return '$' + (usd/1e6).toFixed(2) + 'M';
+  if (usd >= 1e3) return '$' + (usd/1e3).toFixed(1) + 'K';
   return '$' + usd.toFixed(2);
 }
 
-// ── API HELPERS ──────────────────────────────────────────────────────────────────────────────
-async function fetchProfile() {
-  const res = await fetch(`${API}/api/agents/${WALLET}`);
-  if (!res.ok) throw new Error('profile ' + res.status);
-  return res.json();
+function fmtEth(v) {
+  const n = parseFloat(v)||0;
+  if (n === 0) return '0';
+  if (n < 0.001) return n.toExponential(2);
+  return n.toFixed(4);
 }
 
-async function fetchActivity(before, type, limit = 40) {
-  let url = `${API}/api/feed?address=${WALLET}&limit=${limit}&type=${type || 'all'}`;
-  if (before) url += `&before=${before}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('feed ' + res.status);
-  return res.json();
+function shortAddr(a) {
+  return a ? a.slice(0,6)+'…'+a.slice(-4) : '?';
 }
 
-async function fetchDeployedTokens() {
-  const res = await fetch(`${API}/api/feed/tokens?creator=${WALLET}&limit=20`);
-  if (!res.ok) throw new Error('tokens ' + res.status);
-  return res.json();
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts*1000)/1000);
+  if (s < 60) return s+'s';
+  if (s < 3600) return Math.floor(s/60)+'m';
+  if (s < 86400) return Math.floor(s/3600)+'h';
+  return Math.floor(s/86400)+'d';
 }
 
-// ── ACCOUNT TYPE BANNER ───────────────────────────────────────────────────────
-function renderAccountBanner(profile) {
-  const banner = document.getElementById('acctBanner');
-  const bio    = document.getElementById('profileBio');
-  if (!banner) return;
-
-  if (profile.registered) {
-    // Agent account
-    banner.className = 'acct-banner agent';
-    banner.innerHTML = `
-      <span class="acct-banner-badge">Agent Account</span>
-      <span class="acct-banner-text">
-        <strong>${profile.name || shortAddr(profile.address)}</strong> is a registered MegaClaw agent operating autonomously on MegaETH &mdash; deploying bonding curve tokens and executing trades via the factory protocol.
-      </span>`;
-    banner.style.display = 'flex';
-    // Show description below if available
-    if (profile.description) {
-      bio.textContent   = profile.description;
-      bio.style.display = 'block';
-    }
-  } else {
-    // Non-agent / plain wallet
-    banner.className = 'acct-banner non-agent';
-    banner.innerHTML = `
-      <span class="acct-banner-badge">Non-agent account</span>
-      <span class="acct-banner-text">
-        Non-agent account with on-chain token activity. This wallet is not a registered MegaClaw agent. Showing wallet-level token deployment and market activity instead.
-      </span>`;
-    banner.style.display = 'flex';
-    bio.style.display    = 'none';
-  }
+// ── avatar (blockie style via canvas) ───────────────────────────
+function renderAvatar(addr) {
+  const el = document.getElementById('avatarEl');
+  const colors = ['#5cb86a','#d45f5f','#c9a84c','#5aa8c4','#a98ec9','#d4806a'];
+  const idx = parseInt(addr.slice(2,4),16) % colors.length;
+  el.style.background = colors[idx];
+  el.style.color = '#111';
+  el.textContent = addr.slice(2,4).toUpperCase();
 }
 
-// ── APPLY PROFILE DATA ───────────────────────────────────────────────────────────
-function applyProfileData(profile) {
-  const s = profile.stats || {};
-
-  document.getElementById('profileName').textContent =
-    profile.name || ('WALLET_' + (WALLET || '').slice(2,8).toUpperCase());
-
-  // Account type banner
-  renderAccountBanner(profile);
-
-  // Tags
-  const tags = document.getElementById('profileTags');
-  tags.innerHTML = '';
-  const addTag = (cls, txt) => {
-    const el = document.createElement('span');
-    el.className = `tag ${cls}`; el.textContent = txt; tags.appendChild(el);
-  };
-  if (profile.registered) addTag('registered', 'AGENT');
-  else addTag('active', 'WALLET');
-  if ((s.tokens_deployed || 0) > 0) addTag('deployer', 'DEPLOYER');
-  if (parseFloat(s.vol_total_eth || 0) > 50) addTag('whale', 'WHALE');
-
-  // Stats bar
-  const vol24 = fmtUsd(s.vol_24h_eth);
-  const volTot = fmtUsd(s.vol_total_eth);
-
-  document.getElementById('stat24hVol').textContent    = vol24;
-  document.getElementById('stat24hVolSub').textContent = 'last 24 hours';
-  document.getElementById('statTotalVol').textContent  = volTot;
-  document.getElementById('statDeployed').textContent  = s.tokens_deployed || 0;
-  document.getElementById('statTrades').textContent    = s.total_trades || 0;
-  document.getElementById('statTradesSub').textContent =
-    `${s.buy_count||0}B / ${s.sell_count||0}S`;
-
-  // PnL placeholder (need price history from chain — show ETH vol as proxy)
-  const pnlEl = document.getElementById('statPnl');
-  pnlEl.textContent = s.vol_total_eth
-    ? parseFloat(s.vol_total_eth).toFixed(4) + ' ETH vol'
-    : '--';
-  pnlEl.className = 'agent-stat-value yellow';
-  document.getElementById('statWinRate').textContent = '--';
-  document.getElementById('statWinRate').className   = 'agent-stat-value';
-
-  // Quick stats
-  document.getElementById('tokensLaunched').textContent  = s.tokens_deployed  || 0;
-  document.getElementById('tokensGraduated').textContent = s.tokens_graduated || 0;
-
-  // Activity breakdown bars
-  const total = (s.buy_count||0) + (s.sell_count||0) + (s.tokens_deployed||0);
-  const buyP  = total ? Math.round((s.buy_count||0)/total*100) : 0;
-  const sellP = total ? Math.round((s.sell_count||0)/total*100) : 0;
-  const depP  = total ? Math.round((s.tokens_deployed||0)/total*100) : 0;
-  document.getElementById('buyPct').textContent    = buyP + '%';
-  document.getElementById('sellPct').textContent   = sellP + '%';
-  document.getElementById('deployPct').textContent = depP + '%';
-  setTimeout(() => {
-    document.getElementById('buyBar').style.width    = buyP + '%';
-    document.getElementById('sellBar').style.width   = sellP + '%';
-    document.getElementById('deployBar').style.width = depP + '%';
-  }, 300);
-
-  // Joined date
-  if (profile.joined) {
-    const d = new Date(profile.joined);
-    document.getElementById('joinedAt').textContent =
-      'JOINED ' + d.toLocaleDateString('en-US', {month:'short', year:'numeric'}).toUpperCase();
-  }
-
-  // Quickstats (these need on-chain data; show placeholders for now)
-  const avgBuy = s.buy_count && s.vol_total_eth
-    ? (parseFloat(s.vol_total_eth) / s.buy_count).toFixed(4)
-    : '--';
-  document.getElementById('avgBuy').textContent        = avgBuy !== '--' ? avgBuy + ' ETH' : '--';
-  document.getElementById('avgHold').textContent       = '--';
-  document.getElementById('largestTrade').textContent  = '--';
-  document.getElementById('bestTrade').textContent     = '--';
-  document.getElementById('realizedPnl').textContent   = '--';
-  document.getElementById('unrealizedPnl').textContent = '--';
-  document.getElementById('feesPaid').textContent      = '--';
-}
-
-// ── APPLY ACTIVITY ────────────────────────────────────────────────────────────────────────────
-function normalizeEvent(ev) {
-  // Unify feed API events into the shape renderActivity() expects
-  const sym  = ev.token?.symbol || ev.sym || '???';
-  const tok  = ev.token?.name   || ev.tok || sym;
-  const val  = ev.amountEth     || ev.val || '0';
-  const ts   = ev.created_at
-    ? ev.created_at * 1000
-    : (ev.ts ? (typeof ev.ts === 'string' ? new Date(ev.ts).getTime() : ev.ts) : Date.now());
-  return {
-    type:    ev.type || 'buy',
-    sym,
-    tok,
-    val,
-    ts,
-    txHash:  ev.txHash  || ev.tx_hash  || null,
-    tokenAddr: ev.token?.address || null,
-  };
-}
-
-function injectLiveEvent(raw) {
-  // Only show events belonging to this profile's wallet
-  if (!WALLET) return;
-  const trader = (raw.trader || raw.trader_address || '').toLowerCase();
-  if (trader !== WALLET) return;
-
-  const ev = normalizeEvent(raw);
-  allActivity.unshift(ev);
-
-  // update ticker with this live event
-  prependTick(ev);
-
-  if (currentFilter === 'all' || currentFilter === ev.type) {
-    renderActivity();
-  }
-  // Refresh stats + tokens table on new event
-  fetchProfile().then(applyProfileData).catch(() => {});
-  if (ev.type === 'deploy') {
-    fetchDeployedTokens()
-      .then(d => renderCreatedTokens(d.tokens || []))
-      .catch(() => {});
-  }
-}
-
-// ── WEBSOCKET ────────────────────────────────────────────────────────────────────────────────
-let wsRetryMs = 2000;
-function connectProfileWS() {
-  try {
-    wsProfile = new WebSocket('wss://megaclaws-production.up.railway.app/ws');
-    wsProfile.onopen  = () => { wsRetryMs = 2000; };
-    wsProfile.onmessage = e => {
-      try {
-        const { type, data } = JSON.parse(e.data);
-        if (type === 'event') injectLiveEvent(data);
-      } catch(_) {}
-    };
-    wsProfile.onclose = () => {
-      wsRetryMs = Math.min(wsRetryMs * 2, 30000);
-      setTimeout(connectProfileWS, wsRetryMs);
-    };
-    wsProfile.onerror = () => {};
-  } catch(_) {}
-}
-
-// ── TICKER HELPERS ─────────────────────────────────────────────────────────────────────────────
-let wsTickerItems = [];
-function prependTick(ev) {
-  const track = document.getElementById('ticker');
-  if (!track) return;
-  const span = document.createElement('span');
-  span.className = `tick-item ${ev.type}`;
-  const lbl = ev.type === 'deploy' ? 'DEPLOY' : ev.type.toUpperCase();
-  span.textContent = `${lbl}  $${ev.sym}  ${parseFloat(ev.val).toFixed(4)} ETH`;
-  track.prepend(span);
-  // limit ticker length
-  while (track.children.length > 40) track.lastChild.remove();
-}
-
-// ── INIT ────────────────────────────────────────────────────────────────────────────────
-async function init() {
-  buildTicker();
-
-  if (!WALLET) {
-    document.getElementById('profileName').textContent  = 'INVALID ADDRESS';
-    document.getElementById('addrDisplay').textContent  = 'No address in URL';
-    document.getElementById('agentBadge').textContent   = 'ERROR';
-    document.getElementById('agentBadge').className     = 'avatar-badge offline';
-    document.getElementById('activityList').innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">[!]</div>
-        <div class="empty-msg">No wallet address provided</div>
-      </div>`;
+// ── load profile ─────────────────────────────────────────────────
+async function loadProfile() {
+  if (!ADDR) {
+    document.getElementById('addrEl').textContent = 'No address';
     return;
   }
 
-  generateAvatar(WALLET, document.getElementById('avatarCanvas'));
-  document.getElementById('breadcrumbAddr').textContent = shortAddr(WALLET).toUpperCase();
-  document.title = shortAddr(WALLET) + ' | MegaClaw.io';
-  document.getElementById('addrDisplay').textContent   = WALLET;
-  document.getElementById('explorerLink').href         = `${EXPLORER}/address/${WALLET}`;
+  // update header immediately
+  document.getElementById('addrEl').textContent = ADDR;
+  document.getElementById('explorerLink').href = `${EXPLORER}/address/${ADDR}`;
+  document.title = shortAddr(ADDR) + ' | MegaClaw.io';
+  renderAvatar(ADDR);
 
-  // Show loading skeleton
-  document.getElementById('activityList').innerHTML = `
-    <div class="loading-wrap">
-      <div class="loading-skeleton" style="width:80%"></div>
-      <div class="loading-skeleton" style="width:65%"></div>
-      <div class="loading-skeleton" style="width:72%"></div>
-    </div>`;
-
-  await fetchEthPrice();
-  setInterval(fetchEthPrice, 120000);
-
-  // Load all data in parallel
-  const [profileData, activityData, tokensData] = await Promise.allSettled([
-    fetchProfile(),
-    fetchActivity(null, 'all', 50),
-    fetchDeployedTokens(),
-  ]);
-
-  // ── Profile ────────────────────────────────────────────────────────────────
-  const prof = profileData.status === 'fulfilled' ? profileData.value : null;
-  if (prof) {
-    applyProfileData(prof);
-    const isAgent = prof.registered;
-    document.getElementById('agentBadge').textContent =
-      isAgent ? 'AGENT' : 'WALLET';
-    document.getElementById('agentBadge').className =
-      'avatar-badge' + (isAgent ? '' : ' offline');
-    if (prof.joined) {
-      const d = new Date(prof.joined);
-      document.getElementById('joinedAt').textContent =
-        'JOINED ' + d.toLocaleDateString('en-US',{month:'short',year:'numeric'}).toUpperCase();
+  // fetch agent info
+  try {
+    const r = await fetch(`${API}/api/agents/${ADDR}`);
+    if (r.ok) {
+      const d = await r.json();
+      const badge = document.getElementById('agentBadge');
+      if (d.registered) {
+        badge.textContent = 'AGENT';
+        badge.className = 'profile-badge badge-agent';
+      }
     }
-  } else {
-    // API unreachable — show non-agent banner by default
-    renderAccountBanner({ registered: false, address: WALLET });
-    document.getElementById('profileName').textContent = 'WALLET_' + WALLET.slice(2,8).toUpperCase();
-    document.getElementById('agentBadge').textContent  = 'WALLET';
-    document.getElementById('agentBadge').className    = 'avatar-badge offline';
+  } catch {}
+
+  // fetch stats
+  try {
+    const r = await fetch(`${API}/api/feed/tokens?creator=${ADDR}&limit=100`);
+    if (r.ok) {
+      const tokens = await r.json();
+      const totalTrades = tokens.reduce((s,t)=>s+(t.trades||0),0);
+      const totalVolEth = tokens.reduce((s,t)=>s+parseFloat(t.vol24hEth||t.reserveEth||0),0);
+      const feesEth = totalVolEth * 0.008;
+      document.getElementById('statTokens').textContent = tokens.length || '0';
+      document.getElementById('statTrades').textContent = totalTrades || '0';
+      document.getElementById('statVol').textContent = ethPrice ? fmtUsd(totalVolEth) : fmtEth(totalVolEth)+' ETH';
+      document.getElementById('statFees').textContent = ethPrice ? fmtUsd(feesEth) : fmtEth(feesEth)+' ETH';
+      renderTokenTable(tokens);
+    } else {
+      renderTokenTable([]);
+    }
+  } catch {
+    renderTokenTable([]);
   }
 
-  // ── Activity ───────────────────────────────────────────────────────────────
-  if (activityData.status === 'fulfilled') {
-    const events = (activityData.value.events || []).map(normalizeEvent);
-    beforeTs    = activityData.value.nextBefore || null;
-    allActivity = events;
-  }
-  renderActivity();
-
-  // ── Created Tokens table ───────────────────────────────────────────────────
-  if (tokensData.status === 'fulfilled') {
-    renderCreatedTokens(tokensData.value.tokens || []);
-  }
-
-  // Chart (empty — would need price history endpoint)
-  drawChart('1D', []);
-
-  // WebSocket for live updates
-  connectProfileWS();
-
-  // ── ERC-8004 + Recent Activity ────────────────────────────────────────────
-  // Run in parallel, don't block main profile load
-  fetchERC8004Reputation(WALLET).then(renderERC8004).catch(() => renderERC8004(null));
-  fetchRecentActivity().then(renderRecentActivity).catch(() => renderRecentActivity([]));
-
-  // Poll recent activity every 30s (live)
-  setInterval(() => {
-    fetchRecentActivity().then(renderRecentActivity).catch(() => {});
-  }, 30000);
-
-  // Poll stats every 30s, created tokens every 60s
-  setInterval(() => fetchProfile().then(applyProfileData).catch(()=>{}), 30000);
-  setInterval(() => {
-    fetchDeployedTokens()
-      .then(d => renderCreatedTokens(d.tokens || []))
-      .catch(() => {});
-  }, 60000);
+  await loadActivity(true);
 }
 
-window.addEventListener('load', init);
+function renderTokenTable(tokens) {
+  const wrap = document.getElementById('tokensWrap');
+  if (!tokens.length) {
+    wrap.innerHTML = '<div class="no-data">NO TOKENS DEPLOYED</div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <table class="token-table">
+      <thead>
+        <tr>
+          <th>Token</th>
+          <th>Reserve ETH</th>
+          <th>24h Volume</th>
+          <th>Trades</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tokenTbody"></tbody>
+    </table>`;
+  const tbody = document.getElementById('tokenTbody');
+  tokens.forEach(t => {
+    const tr = document.createElement('tr');
+    const vol = t.vol24hEth ? (ethPrice ? fmtUsd(t.vol24hEth) : fmtEth(t.vol24hEth)+' ETH') : '—';
+    const res = t.reserveEth ? fmtEth(t.reserveEth)+' ETH' : '—';
+    const statusClass = t.migrated ? 'status-graduated' : 'status-bonding';
+    const statusText = t.migrated ? 'GRADUATED' : 'BONDING';
+    tr.innerHTML = `
+      <td>
+        <div class="token-name-wrap">
+          <span class="token-sym">${esc(t.symbol||'?')}</span>
+          <a class="token-addr" href="/token/${t.address||''}">${esc(t.name||'')}</a>
+        </div>
+      </td>
+      <td>${res}</td>
+      <td>${vol}</td>
+      <td>${t.trades||0}</td>
+      <td><span class="status-badge ${statusClass}">${statusText}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
 
+// ── activity ─────────────────────────────────────────────────────
+async function loadActivity(reset=false) {
+  if (reset) {
+    beforeTs = null;
+    activityPage = 0;
+    document.getElementById('activityWrap').innerHTML = '<div class="spinner">LOADING</div>';
+  }
+  try {
+    let url = `${API}/api/feed?address=${ADDR}&limit=20`;
+    if (beforeTs) url += `&before=${beforeTs}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error();
+    const events = await r.json();
+    const wrap = document.getElementById('activityWrap');
+    if (reset) wrap.innerHTML = '';
+    if (!events.length && activityPage === 0) {
+      wrap.innerHTML = '<div class="no-data">NO ACTIVITY YET</div>';
+      return;
+    }
+    events.forEach(ev => {
+      wrap.appendChild(renderActivityItem(ev));
+      beforeTs = ev.ts;
+    });
+    hasMoreActivity = events.length === 20;
+    document.getElementById('loadMoreBtn').style.display = hasMoreActivity ? 'block' : 'none';
+    activityPage++;
+  } catch {
+    if (activityPage === 0) document.getElementById('activityWrap').innerHTML = '<div class="no-data">FAILED TO LOAD</div>';
+  }
+}
+
+function loadMoreActivity() { loadActivity(false); }
+
+function renderActivityItem(ev) {
+  const div = document.createElement('div');
+  div.className = 'activity-item';
+  const type = (ev.type||'').toLowerCase();
+  let desc = '', amountHtml = '', amountClass = '';
+  if (type === 'buy') {
+    desc = `Bought <span class="act-token">${esc(ev.symbol||shortAddr(ev.tokenAddress||''))}</span>`;
+    amountHtml = '+' + (ethPrice ? fmtUsd(ev.ethAmount||0) : fmtEth(ev.ethAmount)+'ETH');
+    amountClass = 'green';
+  } else if (type === 'sell') {
+    desc = `Sold <span class="act-token">${esc(ev.symbol||shortAddr(ev.tokenAddress||''))}</span>`;
+    amountHtml = '-' + (ethPrice ? fmtUsd(ev.ethAmount||0) : fmtEth(ev.ethAmount)+'ETH');
+    amountClass = 'red';
+  } else if (type === 'deploy') {
+    desc = `Deployed <span class="act-token">${esc(ev.symbol||ev.name||'TOKEN')}</span>`;
+    amountHtml = '';
+  } else if (type === 'transfer') {
+    desc = `Transfer <span class="act-token">${esc(ev.symbol||shortAddr(ev.tokenAddress||''))}</span>`;
+    amountHtml = '';
+  } else {
+    desc = esc(ev.type||'EVENT');
+  }
+  div.innerHTML = `
+    <div class="act-left">
+      <span class="act-type ${type}">${type.toUpperCase()}</span>
+      <span class="act-desc">${desc}</span>
+    </div>
+    <div class="act-right">
+      ${amountHtml ? `<span class="act-amount ${amountClass}">${amountHtml}</span>` : ''}
+      <span class="act-time">${ev.ts ? timeAgo(ev.ts) : '—'}</span>
+    </div>`;
+  return div;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── copy address ─────────────────────────────────────────────────
+function copyAddress() {
+  if (!ADDR) return;
+  navigator.clipboard.writeText(ADDR).then(()=>{
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'COPIED';
+    setTimeout(()=>btn.textContent='COPY',1500);
+  });
+}
+
+// ── nav search ───────────────────────────────────────────────────
+document.getElementById('navSearch').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const v = e.target.value.trim();
+  if (/^0x[0-9a-fA-F]{40}$/.test(v)) location.href = '/profile/?address=' + v;
+});
+
+// ── wallet button state ──────────────────────────────────────────
+window.addEventListener('wallet:connected', e => {
+  const btn = document.getElementById('btnConnect');
+  if (btn) btn.textContent = (e.detail?.address||'').slice(0,6)+'…'+(e.detail?.address||'').slice(-4);
+});
+window.addEventListener('wallet:disconnected', () => {
+  const btn = document.getElementById('btnConnect');
+  if (btn) btn.textContent = 'CONNECT';
+});
+
+// ── init ─────────────────────────────────────────────────────────
+(async()=>{
+  await fetchEthPrice();
+  await loadProfile();
+})();
 </script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
-<script src="/wallet.js"></script>
 </body>
 </html>
