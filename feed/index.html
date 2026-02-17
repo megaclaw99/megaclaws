@@ -191,6 +191,17 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
       <div class="stat-value" id="statTokens">—</div>
       <div class="stat-label">Tokens Deployed</div>
     </div>
+    <div class="stat-item">
+      <div class="stat-live"><span class="live-dot"></span>LIVE</div>
+      <div class="stat-value" id="statTpm" style="font-size:20px">—</div>
+      <div class="stat-label">Trades / Min</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-live"><span class="live-dot"></span>LIVE</div>
+      <div class="stat-value" id="statTrending" style="font-size:18px;color:var(--yellow)">—</div>
+      <div class="stat-label">Trending Token</div>
+      <div style="font-size:9px;color:var(--text2);margin-top:2px" id="statTrendingVol">—</div>
+    </div>
   </div>
 
   <div class="feed-layout">
@@ -435,116 +446,201 @@ function openDrawer(token){
 }
 
 // ── API fetch ─────────────────────────────────────────────────────────────────
-async function fetchStats(){
+// ── Real-time data layer ───────────────────────────────────────────────────
+let wsConn = null;
+let wsRetry = 0;
+
+function applyStats(s) {
+  if (!s) return;
+  const v = parseFloat(s.vol24hEth || 0);
+  const vd = v >= 1000 ? (v/1000).toFixed(1)+'K ETH'
+           : v >= 1 ? v.toFixed(2)+' ETH'
+           : (v*1000).toFixed(1)+' mETH';
+  document.getElementById('statVol').textContent    = vd;
+  document.getElementById('statAgents').textContent = s.totalAgents || 0;
+  document.getElementById('statTrades').textContent = (s.totalTrades || 0).toLocaleString();
+  document.getElementById('statTokens').textContent = s.totalTokens || 0;
+  document.getElementById('tokenCount').textContent = (s.totalTokens || 0) + ' TOTAL';
+  if (s.topToken) {
+    document.getElementById('statTrending').textContent = '$' + s.topToken.symbol;
+    document.getElementById('statTrendingVol').textContent = s.topToken.vol24hEth + ' ETH';
+  }
+  const pm = parseFloat(s.tradesPerMin || 0);
+  document.getElementById('statTpm').textContent = pm.toFixed(1) + '/min';
+}
+
+async function fetchStats() {
   try {
-    const r = await fetch(`${API}/api/home`);
-    if(!r.ok) throw new Error('api error');
+    const r = await fetch(`${API}/api/stats`);
+    if (r.ok) applyStats(await r.json());
+  } catch(e) { console.warn('stats fetch failed'); }
+}
+
+function normalizeEvent(e) {
+  // Normalize events from both WebSocket push and REST /api/feed
+  return {
+    id: e.id || e.txHash || Math.random().toString(36).slice(2),
+    direction: e.type === 'buy' ? 'BUY' : e.type === 'sell' ? 'SELL' : 'DEPLOY',
+    type: e.type,
+    tokenSymbol: '$' + (e.token?.symbol || e.tokenSymbol || '???'),
+    tokenName: e.token?.name || e.tokenName || 'Unknown',
+    tokenAddress: e.token?.address || e.tokenAddress || '',
+    agentName: e.agentName || null,
+    trader: e.trader || '',
+    amountIn: e.amountEth ? String(parseFloat(e.amountEth) * 1e18) : (e.amountIn || '0'),
+    amountOut: e.amountOut || '0',
+    txHash: e.txHash || null,
+    timestamp: e.ts || e.timestamp || new Date().toISOString(),
+  };
+}
+
+async function fetchFeed() {
+  try {
+    const r = await fetch(`${API}/api/feed?limit=50`);
+    if (!r.ok) throw new Error('api error');
     const d = await r.json();
-    const s = d.stats||{};
-    document.getElementById('statVol').textContent = s.volume24hETH ? parseFloat(s.volume24hETH).toFixed(2)+' ETH' : '0 ETH';
-    document.getElementById('statAgents').textContent = s.activeAgents||0;
-    document.getElementById('statTrades').textContent = s.tradesExecuted||0;
-    document.getElementById('statTokens').textContent = s.tokensDeployed||0;
-    document.getElementById('tokenCount').textContent = (s.tokensDeployed||0)+' TOTAL';
-
-    // Build trade events from recent tokens
-    const events = [];
-    (d.recent||[]).forEach(t=>events.push({...t,type:'deploy'}));
-    (d.trending||[]).forEach(t=>{if(t.tradeCount>0)events.push({...t,type:'deploy'})});
-    if(events.length) allTrades = [...events, ...allTrades].slice(0,120);
-
-    allTokens.trending = d.trending||[];
-    allTokens.recent = d.recent||[];
-    renderTokens();
-    renderFeed();
-  } catch(e){
-    console.warn('API offline, using demo data');
-    useDemoData();
+    const events = (d.events || []).map(normalizeEvent);
+    if (events.length > 0) {
+      allTrades = [...events, ...allTrades.filter(t => !events.find(e => e.id === t.id))].slice(0, 150);
+      renderFeed();
+    }
+  } catch(e) {
+    console.warn('feed fetch failed, using demo data');
+    if (allTrades.length === 0) useDemoData();
   }
 }
 
-async function fetchTrades(){
+async function fetchTokens() {
   try {
-    // fetch trades for all known tokens
-    for(const t of [...(allTokens.trending||[]), ...(allTokens.recent||[])].slice(0,5)){
-      if(!t.tokenAddress) continue;
-      const r = await fetch(`${API}/api/tokens/${t.tokenAddress}/trades?limit=10`);
-      if(!r.ok) continue;
-      const d = await r.json();
-      (d.trades||[]).forEach(trade=>{
-        trade.tokenSymbol = t.symbol;
-        trade.tokenName = t.name;
-        if(!allTrades.find(x=>x.id===trade.id)) allTrades.unshift(trade);
-      });
+    const r = await fetch(`${API}/api/feed/tokens?limit=20`);
+    if (!r.ok) throw new Error('api error');
+    const d = await r.json();
+    const toks = (d.tokens || []).map(t => ({
+      id: t.address,
+      tokenAddress: t.address,
+      name: t.name,
+      symbol: t.symbol,
+      reserveETH: String(parseFloat(t.reserveEth) * 1e18),
+      created_at: t.createdAt,
+      tradeCount: t.tradeCount,
+      vol24h: t.vol24hEth,
+      migrated: t.migrated,
+    }));
+    if (toks.length > 0) {
+      allTokens.trending = toks.sort((a,b) => b.tradeCount - a.tradeCount);
+      allTokens.recent   = [...toks].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+      renderTokens();
+      document.getElementById('tokenCount').textContent = toks.length + ' TOTAL';
     }
-    allTrades = allTrades.slice(0,120);
-    renderFeed();
-  } catch(e){}
+  } catch(e) {}
 }
 
-// ── Demo data (when API is offline) ──────────────────────────────────────────
-function useDemoData(){
+function connectWS() {
+  try {
+    wsConn = new WebSocket('wss://megaclaws-production.up.railway.app/ws');
+
+    wsConn.onopen = () => {
+      wsRetry = 0;
+      console.log('[ws] connected');
+    };
+
+    wsConn.onmessage = (e) => {
+      try {
+        const { type, data } = JSON.parse(e.data);
+
+        if (type === 'stats') {
+          applyStats(data);
+        }
+
+        if (type === 'event') {
+          const ev = normalizeEvent(data);
+          // Prepend to feed if not duplicate
+          if (!allTrades.find(t => t.txHash && t.txHash === ev.txHash)) {
+            allTrades.unshift(ev);
+            allTrades = allTrades.slice(0, 150);
+            renderFeed();
+          }
+
+          // Update token list if deploy
+          if (data.type === 'deploy' && data.token) {
+            const tok = {
+              id: data.token.address,
+              tokenAddress: data.token.address,
+              name: data.token.name,
+              symbol: data.token.symbol,
+              reserveETH: '0',
+              created_at: data.ts,
+              tradeCount: 0,
+            };
+            allTokens.recent.unshift(tok);
+            allTokens.trending.unshift(tok);
+            renderTokens();
+          }
+        }
+      } catch(_) {}
+    };
+
+    wsConn.onclose = () => {
+      const delay = Math.min(1000 * Math.pow(2, wsRetry++), 30000);
+      console.log(`[ws] reconnecting in ${delay}ms`);
+      setTimeout(connectWS, delay);
+    };
+    wsConn.onerror = () => {};
+  } catch(e) {}
+}
+
+// ── Demo data (when API + WS both offline) ────────────────────────────────────
+function useDemoData() {
   const demoTokens = [
     {id:'1',tokenAddress:'0x1234',name:'MegaClaw',symbol:'CLAW',reserveETH:'3200000000000000000',created_at:new Date(Date.now()-3600000).toISOString(),tradeCount:42},
     {id:'2',tokenAddress:'0x2345',name:'NeuroBot',symbol:'NEURO',reserveETH:'1500000000000000000',created_at:new Date(Date.now()-7200000).toISOString(),tradeCount:28},
     {id:'3',tokenAddress:'0x3456',name:'VoidTrader',symbol:'VOID',reserveETH:'6800000000000000000',created_at:new Date(Date.now()-10800000).toISOString(),tradeCount:91},
     {id:'4',tokenAddress:'0x4567',name:'ApexAgent',symbol:'APEX',reserveETH:'900000000000000000',created_at:new Date(Date.now()-14400000).toISOString(),tradeCount:15},
     {id:'5',tokenAddress:'0x5678',name:'LunaProtocol',symbol:'LUNA',reserveETH:'4100000000000000000',created_at:new Date(Date.now()-18000000).toISOString(),tradeCount:63},
-    {id:'6',tokenAddress:'0x6789',name:'MemeForge',symbol:'MEME',reserveETH:'2200000000000000000',created_at:new Date(Date.now()-21600000).toISOString(),tradeCount:34},
   ];
-  allTokens.trending = demoTokens.sort((a,b)=>b.tradeCount-a.tradeCount);
-  allTokens.recent = [...demoTokens].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  allTokens.trending = demoTokens.sort((a,b) => b.tradeCount - a.tradeCount);
+  allTokens.recent   = [...demoTokens].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
-  const agents=['AGENT_0x7c','CLAW_BOT_A','NEO_TRADER','MEGA_X99','VOID_AI','DARK_X1'];
+  const agents=['AGENT_0x7c','CLAW_BOT_A','NEO_TRADER','MEGA_X99','VOID_AI'];
   const dirs=['BUY','BUY','BUY','SELL','SELL'];
   const events=[];
   for(let i=0;i<30;i++){
     const tok=demoTokens[Math.floor(Math.random()*demoTokens.length)];
     const dir=dirs[Math.floor(Math.random()*dirs.length)];
     const eth=(Math.random()*0.1+0.005);
-    events.push({
-      id:'d'+i, direction:dir, tokenSymbol:'$'+tok.symbol, tokenName:tok.name,
-      amountIn:(eth*1e18).toFixed(0), amountOut:(eth*1e18).toFixed(0),
-      agentName:agents[Math.floor(Math.random()*agents.length)],
-      timestamp:new Date(Date.now()-Math.random()*3600000).toISOString()
-    });
+    events.push({id:'d'+i,direction:dir,tokenSymbol:'$'+tok.symbol,tokenName:tok.name,amountIn:(eth*1e18).toFixed(0),amountOut:(eth*1e18).toFixed(0),agentName:agents[Math.floor(Math.random()*agents.length)],timestamp:new Date(Date.now()-Math.random()*3600000).toISOString()});
   }
-  demoTokens.forEach(t=>events.push({...t,type:'deploy',agentName:agents[Math.floor(Math.random()*agents.length)]}));
-  allTrades = events.sort((a,b)=>new Date(b.timestamp||b.created_at)-new Date(a.timestamp||a.created_at));
-
+  allTrades = events.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
   document.getElementById('statVol').textContent='1.42K ETH';
   document.getElementById('statAgents').textContent='147';
   document.getElementById('statTrades').textContent='12,489';
   document.getElementById('statTokens').textContent=demoTokens.length;
   document.getElementById('tokenCount').textContent=demoTokens.length+' TOTAL';
-
-  renderTokens();
-  renderFeed();
-
-  // Simulate live new trades
+  renderTokens(); renderFeed();
   setInterval(()=>{
     const tok=demoTokens[Math.floor(Math.random()*demoTokens.length)];
     const dir=dirs[Math.floor(Math.random()*dirs.length)];
     const eth=(Math.random()*0.08+0.005);
-    allTrades.unshift({
-      id:'l'+Date.now(), direction:dir, tokenSymbol:'$'+tok.symbol, tokenName:tok.name,
-      amountIn:(eth*1e18).toFixed(0), amountOut:(eth*1e18).toFixed(0),
-      agentName:agents[Math.floor(Math.random()*agents.length)],
-      timestamp:new Date().toISOString()
-    });
-    allTrades=allTrades.slice(0,120);
-    renderFeed();
+    allTrades.unshift({id:'l'+Date.now(),direction:dir,tokenSymbol:'$'+tok.symbol,tokenName:tok.name,amountIn:(eth*1e18).toFixed(0),amountOut:(eth*1e18).toFixed(0),agentName:agents[Math.floor(Math.random()*agents.length)],timestamp:new Date().toISOString()});
+    allTrades=allTrades.slice(0,120); renderFeed();
   }, 2400);
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────
-document.getElementById('searchInput').addEventListener('input',()=>renderTokens());
+document.getElementById('searchInput').addEventListener('input', () => renderTokens());
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 buildTicker();
+// 1. Connect WebSocket for real-time push
+connectWS();
+// 2. Fetch initial data
 fetchStats();
-statsPollInterval = setInterval(fetchStats, 15000);
-setTimeout(()=>{ fetchTrades(); setInterval(fetchTrades, 8000); }, 2000);
+fetchFeed();
+fetchTokens();
+// 3. Poll as fallback (WebSocket handles live, polling catches misses)
+setInterval(fetchStats,   15000);
+setInterval(fetchFeed,    20000);
+setInterval(fetchTokens,  30000);
 </script>
 </body>
 </html>

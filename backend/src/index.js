@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const http = require('http');
 
 const app = express();
 
@@ -28,23 +29,27 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-const agentsRouter = require('./routes/agents');
-const tokensRouter = require('./routes/tokens');
-const tradesRouter = require('./routes/trades');
+const agentsRouter   = require('./routes/agents');
+const tokensRouter   = require('./routes/tokens');
+const tradesRouter   = require('./routes/trades');
 const { router: commentsRouter } = require('./routes/comments');
-const homeRouter = require('./routes/home');
-const uploadRouter = require('./routes/upload');
+const homeRouter     = require('./routes/home');
+const uploadRouter   = require('./routes/upload');
 const transferRouter = require('./routes/transfer');
-const healthRouter = require('./routes/health');
+const healthRouter   = require('./routes/health');
+const statsRouter    = require('./routes/stats');
+const feedRouter     = require('./routes/feed');
 
-app.use('/api/agents', agentsRouter);
-app.use('/api/tokens', tokensRouter);
-app.use('/api/trades', tradesRouter);
+app.use('/api/agents',   agentsRouter);
+app.use('/api/tokens',   tokensRouter);
+app.use('/api/trades',   tradesRouter);
 app.use('/api/comments', commentsRouter);
-app.use('/api/home', homeRouter);
-app.use('/api/upload', uploadRouter);
+app.use('/api/home',     homeRouter);
+app.use('/api/upload',   uploadRouter);
 app.use('/api/transfer', transferRouter);
-app.use('/api/health', healthRouter);
+app.use('/api/health',   healthRouter);
+app.use('/api/stats',    statsRouter);
+app.use('/api/feed',     feedRouter);
 app.get('/api/oracle/eth', require('./routes/health').stack
   ? (req, res) => res.redirect('/api/health/oracle/eth')
   : (req, res, next) => next()
@@ -102,11 +107,22 @@ app.use((err, req, res, next) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT || '3000');
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// WebSocket — must attach before listen
+const { createWss } = require('./ws');
+createWss(server);
+
+server.listen(PORT, () => {
   console.log(`MegaClaw API running on port ${PORT}`);
+  console.log(`WebSocket available at ws://<host>/ws`);
   console.log(`Chain: MegaETH Mainnet (${process.env.CHAIN_ID})`);
   console.log(`Factory: ${process.env.FACTORY_CONTRACT}`);
   console.log(`RPC: ${process.env.RPC_URL}`);
+
+  // Start blockchain indexer after server is ready
+  const { startIndexer } = require('./indexer');
+  startIndexer();
 });
 
 module.exports = app;
