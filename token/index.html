@@ -298,26 +298,29 @@ main{max-width:1100px;margin:0 auto;padding:28px 24px 80px}
           <button class="trade-tab buy active" id="tabBuy" onclick="setTab('buy')">BUY</button>
           <button class="trade-tab sell" id="tabSell" onclick="setTab('sell')">SELL</button>
         </div>
-        <div class="trade-body" id="tradeBody">
-          <div class="trade-lock" id="tradeLock">
-            <div class="lock-text">CONNECT WALLET TO TRADE</div>
-            <button class="btn-unlock" >CONNECT WALLET</button>
-          </div>
+        <!-- balance + presets always visible, outside the lock overlay -->
+        <div style="padding:12px 14px 0;border-bottom:1px solid var(--border)">
           <div class="balance-row">
             <span class="balance-label">BALANCE</span>
             <span class="balance-val" id="balanceDisplay">—</span>
           </div>
-          <div style="margin-bottom:4px">
+          <div style="margin-bottom:10px">
             <div class="form-label">AMOUNT <span id="amountUnit">ETH</span></div>
             <input class="form-input" id="amountInput" type="number" step="0.001" min="0" placeholder="0.01" oninput="updateEstimate()">
           </div>
-          <div class="quick-btns">
+          <div class="quick-btns" style="margin-bottom:10px">
             <span id="quickPresets" style="display:contents">
               <button class="quick-btn" onclick="setQuick(0.01)">0.01</button>
               <button class="quick-btn" onclick="setQuick(0.05)">0.05</button>
               <button class="quick-btn" onclick="setQuick(0.1)">0.1</button>
             </span>
             <button class="quick-btn" style="border-color:var(--moon2);color:var(--moon2)" onclick="setMax()">MAX</button>
+          </div>
+        </div>
+        <div class="trade-body" id="tradeBody">
+          <div class="trade-lock" id="tradeLock">
+            <div class="lock-text">CONNECT WALLET TO TRADE</div>
+            <button class="btn-unlock" >CONNECT WALLET</button>
           </div>
           <div class="estimate-box">
             <div class="estimate-row"><span class="estimate-label">You pay</span><span class="estimate-val" id="estPay">—</span></div>
@@ -414,12 +417,59 @@ async function loadDexChart(){
 }
 
 function buildCanvasChart(wrap){
-  // fallback: mini canvas chart from loaded trades
   const div=document.createElement('div');
   div.className='chart-fallback';
-  div.innerHTML='<canvas id="priceCanvas"></canvas><div class="chart-empty" id="chartEmpty">NO CHART DATA YET</div>';
+  div.innerHTML='<canvas id="priceCanvas"></canvas><div class="chart-empty" id="chartEmpty">WAITING FOR FIRST TRADE</div>';
   wrap.appendChild(div);
-  // will be drawn after trades load
+  // draw bonding curve preview immediately
+  requestAnimationFrame(()=>drawBondingCurvePreview());
+}
+
+function drawBondingCurvePreview(){
+  const canvas=document.getElementById('priceCanvas');
+  if(!canvas)return;
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=canvas.offsetWidth*dpr||600;
+  canvas.height=canvas.offsetHeight*dpr||200;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const W=canvas.offsetWidth||300,H=canvas.offsetHeight||200,pad=14;
+  ctx.clearRect(0,0,W,H);
+  // grid
+  ctx.strokeStyle='rgba(42,40,42,.6)';ctx.lineWidth=1;
+  for(let i=0;i<=3;i++){const y=pad+(H-pad*2)*(i/3);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  // draw bonding curve: p = k / (supply - x)^2  (simplified)
+  const pts=[];
+  const steps=80;
+  for(let i=0;i<=steps;i++){
+    const x=i/steps;
+    const p=0.1+Math.pow(x,2)*2; // price rises with buys
+    pts.push({x:pad+(W-pad*2)*(x), y:pad+(H-pad*2)*(1-Math.min(p/2.1,1))});
+  }
+  // current position marker (based on reserveETH)
+  const rETH=tokenData?parseFloat(tokenData.reserveETH||0)/1e18:0;
+  const pct=Math.min(rETH/7.2,1);
+  const curX=pad+(W-pad*2)*pct;
+
+  // gradient fill
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'rgba(92,184,106,.12)');g.addColorStop(1,'rgba(92,184,106,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(pts[0].x,H);
+  pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(pts[pts.length-1].x,H);ctx.closePath();ctx.fill();
+  // curve line
+  ctx.strokeStyle='rgba(92,184,106,.5)';ctx.lineWidth=1.5;ctx.lineJoin='round';
+  ctx.beginPath();pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.stroke();
+  // current position dot
+  if(pct>0){
+    const curPt=pts[Math.floor(pct*steps)];
+    if(curPt){
+      ctx.fillStyle='#5cb86a';ctx.beginPath();ctx.arc(curPt.x,curPt.y,4,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='rgba(92,184,106,.3)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(curPt.x,curPt.y);ctx.lineTo(curPt.x,H);ctx.stroke();
+    }
+  }
+  const empty=document.getElementById('chartEmpty');
+  if(empty)empty.style.display=pct>0?'none':'flex';
 }
 
 function drawFallbackChart(prices){
@@ -700,6 +750,13 @@ let ethBalance=0n;
 let tokenBalance=0n;
 
 async function fetchBalances(){
+  // wait up to 3s for ethers.js to load
+  if(!window.ethers){
+    for(let i=0;i<30;i++){
+      await new Promise(r=>setTimeout(r,100));
+      if(window.ethers)break;
+    }
+  }
   if(!MC?.wallet?.connected||!MC.wallet.address||!window.ethers)return;
   try{
     const provider=new ethers.BrowserProvider(MC.wallet.provider);
@@ -781,7 +838,11 @@ if(!TOKEN_ADDR){
 }else{
   loadToken();
 }
-setTimeout(()=>setLocked(!(MC?.wallet?.connected)),0);
+// Give wallet.js time to restore session, then check state
+setTimeout(()=>{
+  setLocked(!(MC?.wallet?.connected));
+  if(MC?.wallet?.connected) fetchBalances();
+},300);
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
