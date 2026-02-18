@@ -118,9 +118,19 @@ main{max-width:1100px;margin:0 auto;padding:28px 24px 80px}
 .balance-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:10px}
 .balance-label{color:var(--text2);letter-spacing:1px}
 .balance-val{color:var(--moon);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700}
-.form-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--moon);font-family:'Share Tech Mono',monospace;font-size:13px;padding:9px 11px;outline:none;transition:border-color .15s}
+.form-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--moon);font-family:'Share Tech Mono',monospace;font-size:15px;padding:12px 14px;outline:none;transition:border-color .15s}
 .form-input:focus{border-color:#4a4646}
-.form-input::placeholder{color:#2e2a2a}
+.form-input::placeholder{color:#4a4646}
+.input-wrap{position:relative}
+.input-wrap .form-input{padding-right:70px}
+.input-unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text2);letter-spacing:1px;pointer-events:none}
+.input-row{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
+.input-row .input-wrap{flex:1}
+.btn-max{background:var(--green);border:none;color:#111;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;padding:0 16px;cursor:pointer;text-transform:uppercase;transition:all .15s;flex-shrink:0}
+.btn-max:hover{filter:brightness(1.1)}
+.btn-max:disabled{opacity:.4;cursor:not-allowed}
+.convert-row{font-size:10px;color:var(--text2);margin-bottom:10px;letter-spacing:.5px}
+.convert-val{color:var(--moon);font-family:'Orbitron',sans-serif}
 .quick-btns{display:flex;gap:4px;margin:6px 0 12px}
 .quick-btn{flex:1;background:none;border:1px solid var(--border);color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:9px;padding:5px 0;cursor:pointer;transition:all .15s}
 .quick-btn:hover{border-color:#4a4646;color:var(--moon)}
@@ -298,23 +308,28 @@ main{max-width:1100px;margin:0 auto;padding:28px 24px 80px}
           <button class="trade-tab buy active" id="tabBuy" onclick="setTab('buy')">BUY</button>
           <button class="trade-tab sell" id="tabSell" onclick="setTab('sell')">SELL</button>
         </div>
-        <!-- balance + presets always visible, outside the lock overlay -->
-        <div style="padding:12px 14px 0;border-bottom:1px solid var(--border)">
+        <!-- balance + input always visible, outside the lock overlay -->
+        <div style="padding:14px 14px 12px;border-bottom:1px solid var(--border)">
           <div class="balance-row">
-            <span class="balance-label">BALANCE</span>
+            <span class="balance-label" id="balanceLabel">YOUR ETH</span>
             <span class="balance-val" id="balanceDisplay">—</span>
           </div>
-          <div style="margin-bottom:10px">
-            <div class="form-label">AMOUNT <span id="amountUnit">ETH</span></div>
-            <input class="form-input" id="amountInput" type="number" step="0.001" min="0" placeholder="0.01" oninput="updateEstimate()">
+          <div class="form-label" style="margin-top:10px">AMOUNT</div>
+          <div class="input-row">
+            <div class="input-wrap">
+              <input class="form-input" id="amountInput" type="text" inputmode="decimal" placeholder="0.00" oninput="updateEstimate()">
+              <span class="input-unit" id="amountUnit">ETH</span>
+            </div>
+            <button class="btn-max" id="btnMax" onclick="setMax()">MAX</button>
           </div>
-          <div class="quick-btns" style="margin-bottom:10px">
-            <span id="quickPresets" style="display:contents">
-              <button class="quick-btn" onclick="setQuick(0.01)">0.01</button>
-              <button class="quick-btn" onclick="setQuick(0.05)">0.05</button>
-              <button class="quick-btn" onclick="setQuick(0.1)">0.1</button>
-            </span>
-            <button class="quick-btn" style="border-color:var(--moon2);color:var(--moon2)" onclick="setMax()">MAX</button>
+          <div class="convert-row" id="convertRow">
+            <span id="convertLabel">You get:</span> <span class="convert-val" id="convertVal">—</span>
+          </div>
+          <div class="quick-btns" id="quickPresets">
+            <button class="quick-btn" onclick="setQuick(0.01)">0.01 ETH</button>
+            <button class="quick-btn" onclick="setQuick(0.05)">0.05 ETH</button>
+            <button class="quick-btn" onclick="setQuick(0.1)">0.1 ETH</button>
+            <button class="quick-btn" onclick="setQuick(0.5)">0.5 ETH</button>
           </div>
         </div>
         <div class="trade-body" id="tradeBody">
@@ -651,27 +666,60 @@ function setTab(mode){
   btn.className=`btn-trade ${mode}`;
   btn.textContent=mode==='buy'?'BUY TOKENS':'SELL TOKENS';
   document.getElementById('amountUnit').textContent=mode==='buy'?'ETH':'TOKENS';
-  document.getElementById('amountInput').placeholder=mode==='buy'?'0.01':'1000000';
+  document.getElementById('amountInput').placeholder=mode==='buy'?'0.00':'0';
   document.getElementById('amountInput').value='';
-  document.getElementById('quickPresets').style.display=mode==='buy'?'contents':'none';
+  document.getElementById('balanceLabel').textContent=mode==='buy'?'YOUR ETH':'YOUR TOKENS';
+  document.getElementById('convertLabel').textContent=mode==='buy'?'You get:':'You receive:';
+  const presets=document.getElementById('quickPresets');
+  if(mode==='buy'){
+    presets.style.display='flex';
+    presets.innerHTML=`
+      <button class="quick-btn" onclick="setQuick(0.01)">0.01 ETH</button>
+      <button class="quick-btn" onclick="setQuick(0.05)">0.05 ETH</button>
+      <button class="quick-btn" onclick="setQuick(0.1)">0.1 ETH</button>
+      <button class="quick-btn" onclick="setQuick(0.5)">0.5 ETH</button>`;
+  }else{
+    presets.style.display='flex';
+    presets.innerHTML=`
+      <button class="quick-btn" onclick="setQuickPct(25)">25%</button>
+      <button class="quick-btn" onclick="setQuickPct(50)">50%</button>
+      <button class="quick-btn" onclick="setQuickPct(75)">75%</button>
+      <button class="quick-btn" onclick="setQuickPct(100)">100%</button>`;
+  }
   renderBalance();
   updateEstimate();
 }
 
 function setQuick(v){document.getElementById('amountInput').value=v;updateEstimate();}
 
+function setQuickPct(pct){
+  if(!MC?.wallet?.connected||!window.ethers)return;
+  const bal=parseFloat(ethers.formatEther(tokenBalance));
+  const amt=Math.floor(bal*(pct/100));
+  document.getElementById('amountInput').value=amt>0?amt.toString():'0';
+  updateEstimate();
+}
+
 function updateEstimate(){
   const amt=parseFloat(document.getElementById('amountInput').value)||0;
-  if(!amt||!tokenData){['estPay','estReceive'].forEach(id=>document.getElementById(id).textContent='—');return;}
+  const convertEl=document.getElementById('convertVal');
+  if(!amt||!tokenData){
+    convertEl.textContent='—';
+    ['estPay','estReceive'].forEach(id=>document.getElementById(id).textContent='—');
+    return;
+  }
   const rETH=parseFloat(tokenData.reserveETH||0)/1e18;
   const rToken=parseFloat(tokenData.reserveToken||0)/1e18;
   if(tradeMode==='buy'){
     const ethIn=amt*0.99;
     const out=rETH>0?rToken-(rETH*rToken/(rETH+ethIn)):ethIn*1e9/20000;
+    const outStr=out>=1e9?(out/1e9).toFixed(2)+'B':out>=1e6?(out/1e6).toFixed(2)+'M':out>=1e3?(out/1e3).toFixed(1)+'K':Math.floor(out).toLocaleString();
+    convertEl.textContent=out>0?'~'+outStr+' tokens':'—';
     document.getElementById('estPay').textContent=amt.toFixed(4)+' ETH';
     document.getElementById('estReceive').textContent=out>0?'~'+Math.floor(out).toLocaleString()+' tokens':'—';
   }else{
     const ethOut=rETH>0&&rToken>0?(rETH-(rETH*rToken/(rToken+amt)))*0.99:0;
+    convertEl.textContent=ethOut>0?'~'+ethOut.toFixed(6)+' ETH':'—';
     document.getElementById('estPay').textContent=amt.toLocaleString()+' tokens';
     document.getElementById('estReceive').textContent=ethOut>0?'~'+ethOut.toFixed(6)+' ETH':'—';
   }
@@ -774,27 +822,38 @@ async function fetchBalances(){
 
 function renderBalance(){
   const el=document.getElementById('balanceDisplay');
+  const maxBtn=document.getElementById('btnMax');
   if(!el)return;
-  if(!MC?.wallet?.connected){ el.textContent='—'; return; }
+  if(!MC?.wallet?.connected||!window.ethers){ 
+    el.textContent='—'; 
+    if(maxBtn)maxBtn.disabled=true;
+    return; 
+  }
   if(tradeMode==='buy'){
     const eth=parseFloat(ethers.formatEther(ethBalance));
     el.textContent=eth.toFixed(4)+' ETH';
+    if(maxBtn)maxBtn.disabled=eth<=0;
   }else{
     const tok=parseFloat(ethers.formatEther(tokenBalance));
-    el.textContent=tok>=1e6?(tok/1e6).toFixed(2)+'M':tok>=1e3?(tok/1e3).toFixed(1)+'K':tok.toFixed(2);
+    const tokStr=tok>=1e9?(tok/1e9).toFixed(2)+'B':tok>=1e6?(tok/1e6).toFixed(2)+'M':tok>=1e3?(tok/1e3).toFixed(1)+'K':tok.toFixed(2);
+    el.textContent=tokStr+' tokens';
+    if(maxBtn)maxBtn.disabled=tok<=0;
   }
 }
 
 function setMax(){
-  if(!MC?.wallet?.connected)return;
+  if(!MC?.wallet?.connected||!window.ethers)return;
+  const input=document.getElementById('amountInput');
   if(tradeMode==='buy'){
     // Leave 0.002 ETH for gas
     const gas=BigInt('2000000000000000');
     const avail=ethBalance>gas?ethBalance-gas:0n;
-    document.getElementById('amountInput').value=ethers.formatEther(avail);
+    const val=parseFloat(ethers.formatEther(avail));
+    input.value=val>0?val.toFixed(6):'0';
   }else{
-    // formatEther gives full precision string e.g. "1000000.0" — safe for parseUnits
-    document.getElementById('amountInput').value=ethers.formatEther(tokenBalance);
+    // Format token balance nicely
+    const val=parseFloat(ethers.formatEther(tokenBalance));
+    input.value=val>0?Math.floor(val).toString():'0';
   }
   updateEstimate();
 }
