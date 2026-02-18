@@ -535,7 +535,10 @@ function renderToken(){
   const rETH=parseFloat(t.reserveETH||0)/1e18;
   const rToken=parseFloat(t.reserveToken||0)/1e18;
   const pct=Math.min((rETH/7.2)*100,100);
-  const price=rToken>0?rETH/rToken:0;
+  // V4 bonding curve: price = (VIRTUAL_ETH + realReserveETH) / reserveTokens
+  // VIRTUAL_ETH = 1 ETH keeps initial price at 1e-9 ETH/token
+  const VIRTUAL_ETH = 1.0;
+  const price=rToken>0?(VIRTUAL_ETH+rETH)/rToken:0;
   creatorAddr=(t.creator||'').toLowerCase();
 
   document.title=`$${t.symbol||'?'} | MegaClaw.io`;
@@ -709,15 +712,20 @@ function updateEstimate(){
   }
   const rETH=parseFloat(tokenData.reserveETH||0)/1e18;
   const rToken=parseFloat(tokenData.reserveToken||0)/1e18;
+  const VETH=1.0; // V4 virtual ETH reserve
+  const k=(VETH+rETH)*rToken;
   if(tradeMode==='buy'){
-    const ethIn=amt*0.99;
-    const out=rETH>0?rToken-(rETH*rToken/(rETH+ethIn)):ethIn*1e9/20000;
+    const ethIn=amt*0.99; // 1% fee
+    const newTotal=VETH+rETH+ethIn;
+    const out=k>0?rToken-(k/newTotal):ethIn*1e9;
     const outStr=out>=1e9?(out/1e9).toFixed(2)+'B':out>=1e6?(out/1e6).toFixed(2)+'M':out>=1e3?(out/1e3).toFixed(1)+'K':Math.floor(out).toLocaleString();
     convertEl.textContent=out>0?'~'+outStr+' tokens':'—';
     document.getElementById('estPay').textContent=amt.toFixed(4)+' ETH';
     document.getElementById('estReceive').textContent=out>0?'~'+Math.floor(out).toLocaleString()+' tokens':'—';
   }else{
-    const ethOut=rETH>0&&rToken>0?(rETH-(rETH*rToken/(rToken+amt)))*0.99:0;
+    const newTokens=rToken+amt;
+    const newRealETH=k>0?(k/newTokens)-VETH:0;
+    const ethOut=Math.max(rETH-newRealETH,0)*0.99;
     convertEl.textContent=ethOut>0?'~'+ethOut.toFixed(6)+' ETH':'—';
     document.getElementById('estPay').textContent=amt.toLocaleString()+' tokens';
     document.getElementById('estReceive').textContent=ethOut>0?'~'+ethOut.toFixed(6)+' ETH':'—';
