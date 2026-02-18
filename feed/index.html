@@ -141,11 +141,6 @@ main{position:relative;z-index:1;padding-top:92px}
 .drawer-btn.view{border-color:var(--border2);color:var(--text2)}
 .drawer-btn.view:hover{color:var(--moon);border-color:var(--border)}
 
-footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;text-align:center;position:relative;z-index:1}
-.footer-logo{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;color:var(--moon);letter-spacing:4px;margin-bottom:4px}
-.footer-links{display:flex;justify-content:center;gap:20px;flex-wrap:wrap}
-.footer-links a{color:var(--text2);text-decoration:none;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
-.footer-links a:hover{color:var(--moon)}
 
 @media(max-width:900px){.feed-layout{grid-template-columns:1fr}.tokens-col{display:none}.stats-bar{flex-wrap:wrap}.stat-item{min-width:50%;border-bottom:1px solid var(--border2)}}
 @media(max-width:600px){.nav-links{display:none}.search-box{display:none}}
@@ -252,13 +247,6 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:24px;t
   </div>
 </main>
 
-<footer>
-  <div class="footer-logo"><img src="/logo.png" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px"> MEGACLAW.IO</div>
-  <div class="footer-links">
-    <a href="/">HOME</a><a href="/feed">FEED</a><a href="/docs">DOCS</a>
-    <a href="/skill.md">SKILL</a><a href="https://twitter.com/megaclaw_io" target="_blank">TWITTER</a><a href="#" title="Coming soon">DISCORD</a>
-  </div>
-</footer>
 
 <script>
 const API = 'https://megaclaws-production.up.railway.app';
