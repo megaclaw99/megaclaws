@@ -638,13 +638,16 @@ const SLIP=300n;
 function applySlip(n){return(n*(10000n-SLIP))/10000n}
 
 async function executeTrade(){
-  const amt=parseFloat(document.getElementById('amountInput').value);
-  if(!amt||amt<=0){showTx('Enter an amount','err');return;}
+  const amtStr=document.getElementById('amountInput').value.trim();
+  if(!amtStr||parseFloat(amtStr)<=0){showTx('Enter an amount','err');return;}
   if(!MC?.wallet?.connected){showTx('Connect wallet first','err');return;}
   if(!window.ethers){showTx('ethers.js not loaded','err');return;}
   const provider=new ethers.BrowserProvider(MC.wallet.provider);
   const signer=await provider.getSigner();
-  const amtWei=BigInt(Math.round(amt*1e18));
+  // Use ethers.parseUnits to avoid float precision loss on large token amounts
+  let amtWei;
+  try{ amtWei=ethers.parseUnits(amtStr,18); }
+  catch{ showTx('Invalid amount','err'); return; }
   document.getElementById('tradeBtn').disabled=true;
   try{
     const net=await provider.getNetwork();
@@ -731,8 +734,9 @@ function setMax(){
     // Leave 0.002 ETH for gas
     const gas=BigInt('2000000000000000');
     const avail=ethBalance>gas?ethBalance-gas:0n;
-    document.getElementById('amountInput').value=parseFloat(ethers.formatEther(avail)).toFixed(6);
+    document.getElementById('amountInput').value=ethers.formatEther(avail);
   }else{
+    // formatEther gives full precision string e.g. "1000000.0" — safe for parseUnits
     document.getElementById('amountInput').value=ethers.formatEther(tokenBalance);
   }
   updateEstimate();
