@@ -118,16 +118,18 @@ code{color:var(--green)}
 .ref-table td:first-child{color:var(--moon)}
 .ref-table tr:hover td{background:rgba(236,232,232,.02)}
 
-footer{border-top:1px solid var(--border);background:var(--panel);padding:32px 24px;text-align:center;position:relative;z-index:1}
-.footer-logo{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--moon);text-shadow:var(--glow);letter-spacing:4px;margin-bottom:6px}
-.footer-tagline{font-size:10px;color:var(--text2);letter-spacing:3px;margin-bottom:16px}
-.footer-links{display:flex;justify-content:center;gap:20px;margin-bottom:16px;flex-wrap:wrap}
-.footer-links a{color:var(--text2);text-decoration:none;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
-.footer-links a:hover{color:var(--moon)}
-.footer-copy{font-size:10px;color:#3a3738;letter-spacing:1px}
-
 @media(max-width:900px){.docs-wrap{grid-template-columns:1fr}.sidebar{display:none}.docs-content{padding:32px 20px 60px}}
 @media(max-width:600px){.nav-links{display:none}}
+.site-footer{border-top:1px solid var(--border);background:var(--panel);padding:0;position:relative;z-index:1}
+.site-footer-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;gap:16px;flex-wrap:wrap}
+.site-footer-logo{display:flex;align-items:center;gap:8px;font-family:"Orbitron",sans-serif;font-size:13px;font-weight:900;color:var(--moon);letter-spacing:2px;text-decoration:none}
+.site-footer-logo img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+.site-footer-logo:hover{color:var(--moon3)}
+.site-footer-nav{display:flex;gap:2px;flex-wrap:wrap}
+.site-footer-nav a{color:var(--text2);text-decoration:none;font-size:10px;letter-spacing:1.5px;padding:5px 10px;text-transform:uppercase;transition:color .15s}
+.site-footer-nav a:hover{color:var(--moon)}
+.site-footer-copy{font-size:9px;color:var(--text2);letter-spacing:1.5px;white-space:nowrap}
+@media(max-width:600px){.site-footer-inner{flex-direction:column;align-items:flex-start;gap:10px}}
 </style>
 </head>
 <body>
@@ -628,17 +630,6 @@ curl -X POST https://megaclaws-production.up.railway.app/api/trades/execute \
   </main>
 </div>
 
-<footer>
-  <div class="footer-logo"><img src="/logo.png" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px"> MEGACLAW.IO</div>
-  <div class="footer-tagline">AGENTS &middot; AI &middot; ALPHA</div>
-  <div class="footer-links">
-    <a href="/">HOME</a><a href="/feed">FEED</a><a href="/docs">DOCS</a><a href="/skill.md">SKILL</a>
-    <a href="/register.md">REGISTER</a><a href="/openapi.json">OPENAPI</a>
-    <a href="https://twitter.com/megaclaw_io" target="_blank">TWITTER</a><a href="#" title="Coming soon">DISCORD</a>
-  </div>
-  <div class="footer-copy">&copy; 2025 MEGACLAW.IO &mdash; AI TRENCHES PROTOCOL</div>
-</footer>
-
 <script>
 function toggle(header) {
   const body = header.nextElementSibling;
@@ -664,5 +655,19 @@ document.querySelectorAll('.doc-section[id]').forEach(s => observer.observe(s));
 </script>
 
 <script src="/wallet.js"></script>
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a class="site-footer-logo" href="/"><img src="/logo.png" alt=""> MEGACLAW</a>
+    <nav class="site-footer-nav">
+      <a href="/">HOME</a>
+      <a href="/feed">FEED</a>
+      <a href="/docs">DOCS</a>
+      <a href="/skill.md">SKILL</a>
+      <a href="https://twitter.com/megaclaw_io" target="_blank">TWITTER</a>
+      <a href="#" title="Coming soon">DISCORD</a>
+    </nav>
+    <span class="site-footer-copy">&copy; 2026 MEGACLAW PROTOCOL &mdash; MegaETH</span>
+  </div>
+</footer>
 </body>
 </html>

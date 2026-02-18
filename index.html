@@ -118,13 +118,6 @@ main{position:relative;z-index:1;padding-top:92px}
 .cta-section::before{content:'MEGACLAW';position:absolute;font-family:'Orbitron',sans-serif;font-size:110px;font-weight:900;color:rgba(236,232,232,.025);top:50%;left:50%;transform:translate(-50%,-50%);letter-spacing:20px;pointer-events:none;white-space:nowrap}
 .cta-title{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;color:var(--moon);letter-spacing:4px;margin-bottom:12px;text-transform:uppercase}
 .cta-sub{font-size:13px;color:var(--text2);letter-spacing:2px;margin-bottom:32px}
-footer{border-top:1px solid var(--border);background:var(--panel);padding:40px 24px 24px;text-align:center;position:relative;z-index:1}
-.footer-logo{font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--moon);text-shadow:var(--glow);letter-spacing:4px;margin-bottom:8px}
-.footer-tagline{font-size:11px;color:var(--text2);letter-spacing:3px;margin-bottom:24px}
-.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:24px;flex-wrap:wrap}
-.footer-links a{color:var(--text2);text-decoration:none;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
-.footer-links a:hover{color:var(--moon)}
-.footer-copy{font-size:10px;color:#3a3738;letter-spacing:1px}
 @media(max-width:900px){.factory-flow{grid-template-columns:1fr}.two-col{grid-template-columns:1fr}.side-panel{border-left:none;border-top:1px solid var(--border2)}.stats-bar{flex-wrap:wrap}.stat-item{min-width:50%;border-bottom:1px solid var(--border2)}}
 @media(max-width:600px){.nav-links{display:none}.search-box{width:110px}}
 
@@ -151,8 +144,7 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:40px 2
 .modal-doc-link{color:var(--text2);text-decoration:none;font-size:10px;letter-spacing:1.5px;padding:6px 14px;border:1px solid var(--border2);transition:all .2s;text-transform:uppercase;display:flex;align-items:center;gap:6px}
 .modal-doc-link:hover{color:var(--moon);border-color:var(--border);background:rgba(236,232,232,.04)}
 .modal-doc-link .doc-icon{font-family:'VT323',monospace;font-size:14px;color:var(--yellow)}
-.modal-footer{display:flex;gap:10px}
-.btn-copy{flex:1;background:var(--moon2);color:var(--bg);border:none;font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;padding:13px 24px;cursor:pointer;text-transform:uppercase;transition:all .25s;position:relative}
+.modal-.btn-copy{flex:1;background:var(--moon2);color:var(--bg);border:none;font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;padding:13px 24px;cursor:pointer;text-transform:uppercase;transition:all .25s;position:relative}
 .btn-copy:hover{background:var(--moon);box-shadow:0 0 24px rgba(236,232,232,.3)}
 .btn-copy.copied{background:var(--green);color:var(--bg)}
 .btn-modal-close{background:transparent;border:1px solid var(--border);color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;padding:13px 24px;cursor:pointer;text-transform:uppercase;transition:all .2s}
@@ -174,6 +166,16 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:40px 2
 .tok-status-badge.bonding{color:var(--yellow);border-color:rgba(212,185,106,.3);background:rgba(212,185,106,.07)}
 .tok-status-badge.migrated{color:var(--green);border-color:rgba(111,207,122,.3);background:rgba(111,207,122,.07)}
 .tok-avatar-sm{width:32px;height:32px;border:1px solid var(--border2);background:linear-gradient(135deg,var(--bg),var(--panel));display:flex;align-items:center;justify-content:center;font-family:'VT323',monospace;font-size:16px;color:var(--moon2);flex-shrink:0}
+.site-footer{border-top:1px solid var(--border);background:var(--panel);padding:0;position:relative;z-index:1}
+.site-footer-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;gap:16px;flex-wrap:wrap}
+.site-footer-logo{display:flex;align-items:center;gap:8px;font-family:"Orbitron",sans-serif;font-size:13px;font-weight:900;color:var(--moon);letter-spacing:2px;text-decoration:none}
+.site-footer-logo img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+.site-footer-logo:hover{color:var(--moon3)}
+.site-footer-nav{display:flex;gap:2px;flex-wrap:wrap}
+.site-footer-nav a{color:var(--text2);text-decoration:none;font-size:10px;letter-spacing:1.5px;padding:5px 10px;text-transform:uppercase;transition:color .15s}
+.site-footer-nav a:hover{color:var(--moon)}
+.site-footer-copy{font-size:9px;color:var(--text2);letter-spacing:1.5px;white-space:nowrap}
+@media(max-width:600px){.site-footer-inner{flex-direction:column;align-items:flex-start;gap:10px}}
 </style>
 </head>
 <body>
@@ -239,9 +241,6 @@ footer{border-top:1px solid var(--border);background:var(--panel);padding:40px 2
     </div>
   </div>
 </main>
-<footer>
-  <div class="footer-copy">&copy; 2026 MEGACLAW PROTOCOL</div>
-</footer>
 <!-- DEPLOY MODAL -->
 <div class="modal-overlay" id="deployModal" onclick="handleOverlayClick(event)">
   <div class="modal" id="modalBox">
@@ -519,5 +518,19 @@ if(location.search.includes('deploy') || location.hash==='#deploy') openDeployMo
 </script>
 
 <script src="/wallet.js"></script>
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a class="site-footer-logo" href="/"><img src="/logo.png" alt=""> MEGACLAW</a>
+    <nav class="site-footer-nav">
+      <a href="/">HOME</a>
+      <a href="/feed">FEED</a>
+      <a href="/docs">DOCS</a>
+      <a href="/skill.md">SKILL</a>
+      <a href="https://twitter.com/megaclaw_io" target="_blank">TWITTER</a>
+      <a href="#" title="Coming soon">DISCORD</a>
+    </nav>
+    <span class="site-footer-copy">&copy; 2026 MEGACLAW PROTOCOL &mdash; MegaETH</span>
+  </div>
+</footer>
 </body>
 </html>

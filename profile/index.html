@@ -117,6 +117,16 @@ main{max-width:900px;margin:0 auto;padding:36px 24px 80px}
   .nav-search{display:none}
   .token-table th:nth-child(3),.token-table td:nth-child(3){display:none}
 }
+.site-footer{border-top:1px solid var(--border);background:var(--panel);padding:0;position:relative;z-index:1}
+.site-footer-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;gap:16px;flex-wrap:wrap}
+.site-footer-logo{display:flex;align-items:center;gap:8px;font-family:"Orbitron",sans-serif;font-size:13px;font-weight:900;color:var(--moon);letter-spacing:2px;text-decoration:none}
+.site-footer-logo img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+.site-footer-logo:hover{color:var(--moon3)}
+.site-footer-nav{display:flex;gap:2px;flex-wrap:wrap}
+.site-footer-nav a{color:var(--text2);text-decoration:none;font-size:10px;letter-spacing:1.5px;padding:5px 10px;text-transform:uppercase;transition:color .15s}
+.site-footer-nav a:hover{color:var(--moon)}
+.site-footer-copy{font-size:9px;color:var(--text2);letter-spacing:1.5px;white-space:nowrap}
+@media(max-width:600px){.site-footer-inner{flex-direction:column;align-items:flex-start;gap:10px}}
 </style>
 </head>
 <body>
@@ -457,5 +467,19 @@ window.addEventListener('wallet:disconnected', () => {
   await loadProfile();
 })();
 </script>
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a class="site-footer-logo" href="/"><img src="/logo.png" alt=""> MEGACLAW</a>
+    <nav class="site-footer-nav">
+      <a href="/">HOME</a>
+      <a href="/feed">FEED</a>
+      <a href="/docs">DOCS</a>
+      <a href="/skill.md">SKILL</a>
+      <a href="https://twitter.com/megaclaw_io" target="_blank">TWITTER</a>
+      <a href="#" title="Coming soon">DISCORD</a>
+    </nav>
+    <span class="site-footer-copy">&copy; 2026 MEGACLAW PROTOCOL &mdash; MegaETH</span>
+  </div>
+</footer>
 </body>
 </html>
