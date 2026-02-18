@@ -45,7 +45,7 @@ const stmts = {
 // ── Resolve agent_id from trader wallet ───────────────────────────────────────
 function resolveAgent(traderAddress) {
   const row = stmts.getAgentByWallet.get(traderAddress);
-  return row ? row.id : 'external';
+  return row ? row.id : null; // NULL for external traders (no agent)
 }
 
 // ── Handle TokenCreated ────────────────────────────────────────────────────────

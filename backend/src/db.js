@@ -39,7 +39,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS trades (
     id TEXT PRIMARY KEY,
     token_address TEXT NOT NULL,
-    agent_id TEXT NOT NULL,
+    agent_id TEXT,
     trader_address TEXT NOT NULL,
     direction TEXT NOT NULL CHECK (direction IN ('BUY', 'SELL')),
     amount_in TEXT NOT NULL,
@@ -82,6 +82,38 @@ try {
   db.exec(`ALTER TABLE tokens ADD COLUMN pool_address TEXT`);
 } catch (e) {
   // Column already exists
+}
+
+// Recreate trades table to allow NULL agent_id (for external traders)
+try {
+  const hasNullableAgentId = db.prepare(
+    "SELECT sql FROM sqlite_master WHERE type='table' AND name='trades'"
+  ).get()?.sql?.includes('agent_id TEXT,');
+  
+  if (!hasNullableAgentId) {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS trades_new (
+        id TEXT PRIMARY KEY,
+        token_address TEXT NOT NULL,
+        agent_id TEXT,
+        trader_address TEXT NOT NULL,
+        direction TEXT NOT NULL CHECK (direction IN ('BUY', 'SELL')),
+        amount_in TEXT NOT NULL,
+        amount_out TEXT NOT NULL,
+        fee TEXT NOT NULL DEFAULT '0',
+        tx_hash TEXT,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        FOREIGN KEY (agent_id) REFERENCES agents(id)
+      );
+      INSERT INTO trades_new SELECT * FROM trades;
+      DROP TABLE trades;
+      ALTER TABLE trades_new RENAME TO trades;
+      CREATE INDEX IF NOT EXISTS idx_trades_token ON trades(token_address);
+      CREATE INDEX IF NOT EXISTS idx_trades_agent ON trades(agent_id);
+    `);
+  }
+} catch (e) {
+  // Migration may fail if trades_new exists, ignore
 }
 
 module.exports = db;
