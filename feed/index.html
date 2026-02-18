@@ -473,7 +473,8 @@ function renderTokens(){
         <div class="token-price ${reserveETH>0?'up':'neutral'}">${reserveETH>0?reserveETH.toFixed(3)+' ETH':'—'}</div>
         <div class="token-vol">curve ${pct}%</div>
       </div>`;
-    row.onclick=()=>openDrawer(t);
+    const addr = t.tokenAddress || t.address || t.id || '';
+    row.onclick=()=>{ if(addr) location.href=`/token/?a=${addr}`; else openDrawer(t); };
     list.appendChild(row);
   });
 }
@@ -492,7 +493,7 @@ function openDrawer(token){
       <div class="drawer-stat"><div class="drawer-stat-label">Curve Fill</div><div class="drawer-stat-val">${pct}%</div></div>
     </div>
     <div class="drawer-actions">
-      <a class="drawer-btn buy" href="#" onclick="return false">BUY →</a>
+      <a class="drawer-btn buy" href="/token/?a=${token.tokenAddress||''}">BUY →</a>
       <a class="drawer-btn view" href="${EXPLORER}/token/${token.tokenAddress}" target="_blank">EXPLORER →</a>
     </div>`;
 }
