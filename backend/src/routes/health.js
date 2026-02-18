@@ -3,12 +3,18 @@ const { provider } = require('../chain');
 
 const router = express.Router();
 
+// Version for deploy tracking
+const VERSION = 'v4.1.0';
+const DEPLOYED_AT = new Date().toISOString();
+
 // GET /api/health
 router.get('/', async (req, res) => {
   try {
     const block = await provider.getBlockNumber();
     res.json({
       status: 'ok',
+      version: VERSION,
+      deployedAt: DEPLOYED_AT,
       chain: 'MegaETH Mainnet',
       chainId: 4326,
       block,
