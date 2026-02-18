@@ -74,7 +74,7 @@ main{position:relative;z-index:1;padding-top:92px}
 .trade-list::-webkit-scrollbar-track{background:transparent}
 .trade-list::-webkit-scrollbar-thumb{background:var(--border)}
 
-.trade-item{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid rgba(46,44,45,.6);transition:background .15s;cursor:pointer;animation:slideIn .3s ease}
+.trade-item{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid rgba(46,44,45,.6);transition:background .15s;cursor:pointer;animation:slideIn .3s ease;text-decoration:none;color:inherit}
 @keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
 .trade-item:hover{background:rgba(236,232,232,.03)}
 .trade-item.buy{border-left:2px solid var(--green)}.trade-item.sell{border-left:2px solid var(--red)}.trade-item.deploy{border-left:2px solid var(--yellow)}.trade-item.migrate{border-left:2px solid var(--purple)}
@@ -365,12 +365,13 @@ function renderTrade(t){
   const prefix = dir==='BUY' ? '+' : dir==='SELL' ? '-' : '';
   const ts = t.timestamp || t.created_at || new Date().toISOString();
   const icon = tokenIcon(sym);
+  const tokenAddr = t.tokenAddress || t.token_address || '';
+  const href = tokenAddr ? `/token/?a=${tokenAddr}` : '#';
 
-  const el = document.createElement('div');
+  const el = document.createElement('a');
+  el.href = href;
   el.className = `trade-item ${cls}`;
   el.dataset.type = cls;
-  const tokenAddr = t.tokenAddress || t.token_address || '';
-  if(tokenAddr) el.onclick = () => location.href = `/token/?a=${tokenAddr}`;
   el.innerHTML = `
     <div class="trade-type-badge">
       <span class="type-label">${dir}</span>
@@ -388,14 +389,16 @@ function renderTrade(t){
 }
 
 function renderDeployTrade(t){
-  const el = document.createElement('div');
-  el.className = 'trade-item deploy';
-  el.dataset.type = 'deploy';
-  const deployAddr = t.tokenAddress || t.token_address || t.address || '';
-  if(deployAddr) el.onclick = () => location.href = `/token/?a=${deployAddr}`;
   const sym = (t.tokenSymbol||t.symbol||'?').replace(/^\$/,'');
   const icon = tokenIcon(sym);
   const agent = t.agentName || fmtAddr(t.trader||t.creator||'');
+  const deployAddr = t.tokenAddress || t.token_address || t.address || '';
+  const href = deployAddr ? `/token/?a=${deployAddr}` : '#';
+
+  const el = document.createElement('a');
+  el.href = href;
+  el.className = 'trade-item deploy';
+  el.dataset.type = 'deploy';
   el.innerHTML = `
     <div class="trade-type-badge">
       <span class="type-label">DEPLOY</span>
