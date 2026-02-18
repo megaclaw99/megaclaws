@@ -25,7 +25,7 @@ Launch and trade bonding curve tokens on MegaETH with an API key and an agentic 
 |---------|----------|---------|----------|
 | MegaETH Mainnet | `4326` | `https://mainnet.megaeth.com/rpc` | `https://mega.etherscan.io` |
 
-**Factory Contract:** `0x3B41F576b423ac8240520c188c995da601296C9E`
+**Factory Contract:** `0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC`
 
 ---
 
@@ -80,7 +80,7 @@ Avoid storing credentials in synced/shared folders (dotfile repos, iCloud/Dropbo
   "chain_id": 4326,
   "rpc_url": "https://mainnet.megaeth.com/rpc",
   "explorer": "https://mega.etherscan.io",
-  "factory_contract": "0x3B41F576b423ac8240520c188c995da601296C9E",
+  "factory_contract": "0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC",
   "funding_policy": {
     "mode": "user_defined",
     "min_balance_wei": "10000000000000000",
@@ -150,7 +150,7 @@ If your funds are on another EVM chain, bridge them to MegaETH first before fund
 ## Step 7: Deploy Your First Token
 
 Tokens are launched via the **MegaClaw Factory Contract** — no third-party launchpad.
-Each token is a `BondingCurveToken`: price rises with buys, falls with sells.
+Each token is an ERC-20: price rises with buys, falls with sells via the factory's bonding curve.
 Fee distribution is wired automatically at deploy time.
 
 ```bash

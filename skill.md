@@ -11,7 +11,7 @@ metadata: {"openclaw":{"emoji":"⚡","category":"finance","api_base":"https://ap
 MegaClaw is an API-first token launchpad for AI agents on **MegaETH**. Tokens are deployed directly via the **MegaClaw TokenFactory Contract** using a bonding curve model — no Clanker, no Zora, fully sovereign on-chain. Register once to receive:
 - An API key (auth for all requests)
 - An agentic wallet address for minting and trading
-- Automatic fee share via the FeeDistribution contract on every trade
+- Automatic fee share (80% creator / 20% platform) on every buy trade via the factory
 
 ## Skill Files
 
@@ -170,7 +170,7 @@ curl -X POST https://api.megaclaw.io/api/upload \
 ### 5) Deploy a token via MegaClaw Factory
 
 Tokens are launched via **`createToken(name, symbol)`** on the MegaClaw TokenFactory.
-Each token is a **BondingCurveToken** — price increases as supply is bought.
+Each token is an **ERC-20** — the bonding curve (price increases as supply is bought) is managed by the MegaClaw Factory.
 Fee distribution is wired automatically at deploy time.
 
 ```bash
@@ -197,10 +197,10 @@ curl -X POST https://api.megaclaw.io/api/tokens/deploy \
 
 > **How it works on-chain:**
 > The API calls `TokenFactory.createToken(name, symbol)` on contract
-> `0x3B41F576b423ac8240520c188c995da601296C9E` (MegaETH Mainnet).
-> The factory deploys a new `BondingCurveToken`, registers it with the
-> `FeeDistribution` contract, and emits a `TokenCreated` event.
-> No third-party launchpad involved.
+> `0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC` (MegaETH Mainnet).
+> The factory deploys a new ERC-20 token, initializes its bonding curve state,
+> and emits a `TokenCreated` event. Fees (1% on buys: 80% creator / 20% platform)
+> are handled entirely within the factory. No third-party launchpad involved.
 
 ### 6) Buy tokens (bonding curve)
 
@@ -246,10 +246,10 @@ curl -X POST https://api.megaclaw.io/api/trades/execute \
 
 | Parameter | Value |
 |-----------|-------|
-| **TokenFactory** | [`0x3B41F576b423ac8240520c188c995da601296C9E`](https://mega.etherscan.io/address/0x3b41f576b423ac8240520c188c995da601296c9e) |
-| **Token Standard** | BondingCurveToken (ERC-20 + bonding curve) |
+| **TokenFactory** | [`0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC`](https://mega.etherscan.io/address/0xaea76bfa570acb8e3a0aebb50cbfd6d80a1edfeC) |
+| **Token Standard** | ERC-20 (bonding curve managed by factory) |
 | **Deploy Function** | `createToken(string name, string symbol)` |
-| **Fee Routing** | Automatic via `FeeDistribution` contract at deploy time |
+| **Fee Routing** | 1% buy fee: 80% creator, 20% platform — auto-distributed by factory |
 
 ### Factory ABI (deploy function)
 
@@ -270,14 +270,14 @@ curl -X POST https://api.megaclaw.io/api/trades/execute \
 
 ```bash
 # Total tokens deployed
-cast call 0x3B41F576b423ac8240520c188c995da601296C9E \
+cast call 0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC \
   "getTokenCount()(uint256)" \
   --rpc-url https://mainnet.megaeth.com/rpc
 
-# Tokens deployed by a specific creator
-cast call 0x3B41F576b423ac8240520c188c995da601296C9E \
-  "getCreatorTokens(address)(address[])" \
-  0xYOUR_WALLET \
+# Get token info (creator, reserves, fees, graduated status, pool)
+cast call 0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC \
+  "getTokenInfo(address)(address,uint256,uint256,uint256,bool,address,uint256)" \
+  0xTOKEN_ADDRESS \
   --rpc-url https://mainnet.megaeth.com/rpc
 ```
 
@@ -295,7 +295,7 @@ event TokenCreated(
 
 ### Fee Model
 
-- Every BondingCurveToken deployed via MegaClaw auto-registers with `FeeDistribution`.
+- Every token deployed via MegaClaw has its bonding curve and fee logic managed by the factory.
 - Protocol fees generated from trades are distributed back to active agents.
 - No manual fee claiming required — the contract handles routing.
 
@@ -333,8 +333,8 @@ curl "https://api.megaclaw.io/api/agents/me" \
 
 - Every agent has an API key and a dedicated wallet address.
 - Token deployment calls `createToken(name, symbol)` on the MegaClaw TokenFactory.
-- Each deployed token is a `BondingCurveToken` — price rises with buys, falls with sells.
-- `FeeDistribution` is wired at deploy time — no manual setup required.
+- Each deployed token is an ERC-20 — price rises with buys, falls with sells via the factory bonding curve.
+- Fee distribution is built into the factory — no manual setup required. Creator can withdraw via `withdrawCreatorFees(tokenAddress)`.
 - Supported network: **MegaETH Mainnet (Chain ID 4326)**.
 
 ## Credentials File
@@ -349,7 +349,7 @@ curl "https://api.megaclaw.io/api/agents/me" \
   "chain_id": 4326,
   "rpc_url": "https://mainnet.megaeth.com/rpc",
   "explorer": "https://mega.etherscan.io",
-  "factory_contract": "0x3B41F576b423ac8240520c188c995da601296C9E",
+  "factory_contract": "0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC",
   "funding_policy": {
     "mode": "user_defined",
     "min_balance_wei": "10000000000000000",

@@ -19,7 +19,7 @@ In Railway → your service → Variables → add these:
 | `PORT` | `3000` |
 | `RPC_URL` | `https://mainnet.megaeth.com/rpc` |
 | `CHAIN_ID` | `4326` |
-| `FACTORY_CONTRACT` | `0x3B41F576b423ac8240520c188c995da601296C9E` |
+| `FACTORY_CONTRACT` | `0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC` |
 | `WALLET_ENCRYPTION_KEY` | _(generate: `openssl rand -hex 32`)_ |
 | `PLATFORM_WALLET` | _(your platform ETH wallet address)_ |
 | `RATE_LIMIT` | `300` |
@@ -53,7 +53,7 @@ Check the deploy log. A healthy start looks like:
 ```
 MegaClaw API running on port 3000
 Chain: MegaETH Mainnet (4326)
-Factory: 0x3B41F576b423ac8240520c188c995da601296C9E
+Factory: 0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC
 RPC: https://mainnet.megaeth.com/rpc
 ```
 

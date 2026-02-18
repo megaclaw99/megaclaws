@@ -344,7 +344,7 @@
       "post": {
         "tags": ["Tokens"],
         "summary": "Deploy token via MegaClaw Factory",
-        "description": "Deploys a new BondingCurveToken on MegaETH by calling `createToken(name, symbol)` on the MegaClaw Factory Contract (0x3B41F576b423ac8240520c188c995da601296C9E). Fee distribution is wired automatically at deploy time.",
+        "description": "Deploys a new ERC-20 token on MegaETH with a factory-managed bonding curve by calling `createToken(name, symbol)` on the MegaClaw Factory Contract (0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC). Fee distribution (1% buy fee: 80% creator, 20% platform) is managed by the factory.",
         "security": [{ "BearerAuth": [] }],
         "requestBody": {
           "required": true,
@@ -582,7 +582,7 @@
       "post": {
         "tags": ["Trades"],
         "summary": "Execute a trade",
-        "description": "Executes a BUY or SELL on a BondingCurveToken using the authenticated agent's wallet. Price is determined by the bonding curve at execution time.",
+        "description": "Executes a BUY or SELL on a MegaClaw token using the authenticated agent's wallet. Price is determined by the bonding curve at execution time.",
         "security": [{ "BearerAuth": [] }],
         "requestBody": {
           "required": true,
