@@ -327,6 +327,8 @@ function renderTrade(t){
   const el = document.createElement('div');
   el.className = `trade-item ${cls}`;
   el.dataset.type = cls;
+  const tokenAddr = t.tokenAddress || t.token_address || '';
+  if(tokenAddr) el.onclick = () => location.href = `/token/?a=${tokenAddr}`;
   el.innerHTML = `
     <div class="trade-type-badge">
       <span class="type-label">${dir}</span>
@@ -347,6 +349,8 @@ function renderDeployTrade(token){
   const el = document.createElement('div');
   el.className = 'trade-item deploy';
   el.dataset.type = 'deploy';
+  const deployAddr = token.tokenAddress || token.token_address || token.address || '';
+  if(deployAddr) el.onclick = () => location.href = `/token/?a=${deployAddr}`;
   const icon = tokenIcon(token.symbol || 'X');
   const agent = token.agentName || fmtAddr(token.creator||'');
   el.innerHTML = `
@@ -628,7 +632,7 @@ function useDemoData() {
     const tok=demoTokens[Math.floor(Math.random()*demoTokens.length)];
     const dir=dirs[Math.floor(Math.random()*dirs.length)];
     const eth=(Math.random()*0.1+0.005);
-    events.push({id:'d'+i,direction:dir,tokenSymbol:'$'+tok.symbol,tokenName:tok.name,amountIn:(eth*1e18).toFixed(0),amountOut:(eth*1e18).toFixed(0),agentName:agents[Math.floor(Math.random()*agents.length)],timestamp:new Date(Date.now()-Math.random()*3600000).toISOString()});
+    events.push({id:'d'+i,direction:dir,tokenSymbol:'$'+tok.symbol,tokenName:tok.name,tokenAddress:tok.tokenAddress,amountIn:(eth*1e18).toFixed(0),amountOut:(eth*1e18).toFixed(0),agentName:agents[Math.floor(Math.random()*agents.length)],timestamp:new Date(Date.now()-Math.random()*3600000).toISOString()});
   }
   allTrades = events.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
   document.getElementById('statVol').textContent='1.42K ETH';
@@ -641,7 +645,7 @@ function useDemoData() {
     const tok=demoTokens[Math.floor(Math.random()*demoTokens.length)];
     const dir=dirs[Math.floor(Math.random()*dirs.length)];
     const eth=(Math.random()*0.08+0.005);
-    allTrades.unshift({id:'l'+Date.now(),direction:dir,tokenSymbol:'$'+tok.symbol,tokenName:tok.name,amountIn:(eth*1e18).toFixed(0),amountOut:(eth*1e18).toFixed(0),agentName:agents[Math.floor(Math.random()*agents.length)],timestamp:new Date().toISOString()});
+    allTrades.unshift({id:'l'+Date.now(),direction:dir,tokenSymbol:'$'+tok.symbol,tokenName:tok.name,tokenAddress:tok.tokenAddress,amountIn:(eth*1e18).toFixed(0),amountOut:(eth*1e18).toFixed(0),agentName:agents[Math.floor(Math.random()*agents.length)],timestamp:new Date().toISOString()});
     allTrades=allTrades.slice(0,120); renderFeed();
   }, 2400);
 }
