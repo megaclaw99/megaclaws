@@ -4,41 +4,23 @@
 <meta charset="UTF-8">
 <title>MegaClaw.io</title>
 <script>
-// GitHub Pages SPA router
-// Routes clean paths to the right index.html with query params
+// GitHub Pages SPA redirect - sends all routes to index.html via query params
 var l = window.location;
 var path = l.pathname;
+var search = l.search ? l.search.slice(1) : '';
 
-// /profile/0x... → /profile/?address=0x...
-var profileMatch = path.match(/\/profile\/(0x[0-9a-fA-F]{40})/i);
-if (profileMatch) {
-  l.replace(l.protocol + '//' + l.host + '/profile/?address=' + profileMatch[1].toLowerCase());
-}
-// /token/0x... → /token/?address=0x...
-else {
-  var tokenMatch = path.match(/\/token\/(0x[0-9a-fA-F]{40})/i);
-  if (tokenMatch) {
-    l.replace(l.protocol + '//' + l.host + '/token/?a=' + tokenMatch[1].toLowerCase());
-  }
-  // /feed → /feed/
-  else if (path === '/feed') {
-    l.replace(l.protocol + '//' + l.host + '/feed/');
-  }
-  // /docs → /docs/
-  else if (path === '/docs') {
-    l.replace(l.protocol + '//' + l.host + '/docs/');
-  }
-  // Anything else → home
-  else {
-    l.replace(l.protocol + '//' + l.host + '/');
-  }
-}
+// Redirect to root with path encoded as query param
+var target = l.protocol + '//' + l.host +
+  '/?path=' + encodeURIComponent(path) +
+  (search ? '&query=' + encodeURIComponent(search) : '');
+
+l.replace(target);
 </script>
 </head>
 <body>
 <style>
 body{background:#19191A;color:#ECE8E8;font-family:'Share Tech Mono',monospace;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
-.msg{text-align:center;font-size:14px;letter-spacing:2px;color:#8e8888}
+.msg{text-align:center;font-size:13px;letter-spacing:2px;color:#8e8888}
 </style>
 <div class="msg">ROUTING...</div>
 </body>
