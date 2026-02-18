@@ -223,8 +223,10 @@ async function poll() {
     const latest = Number(await provider.getBlockNumber());
     
     if (lastBlock === 0) {
-      // On first run, look back ~500 blocks
-      lastBlock = Math.max(0, latest - 500);
+      // On first run: use START_BLOCK env var, or fall back to latest-500
+      const startBlock = process.env.START_BLOCK ? parseInt(process.env.START_BLOCK) : 0;
+      lastBlock = startBlock > 0 ? startBlock - 1 : Math.max(0, latest - 500);
+      console.log(`[indexer] Starting from block ${lastBlock + 1}`);
     }
     
     if (latest <= lastBlock) return;

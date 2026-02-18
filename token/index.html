@@ -192,7 +192,6 @@ main{max-width:1100px;margin:0 auto;padding:28px 24px 80px}
   <div class="nav-links">
     <a href="/feed">FEED</a>
     <a href="/docs">DOCS</a>
-    <a href="/feed#leaderboard">LEADERBOARD</a>
   </div>
   <button class="btn-connect" id="btnConnect" >CONNECT</button>
 </nav>
@@ -725,10 +724,14 @@ function updateEstimate(){
   }
 }
 
-const BONDING_ABI=[
-  'function buyTokens(uint256 minTokensOut) external payable',
-  'function sellTokens(uint256 tokenAmount, uint256 minETHOut) external',
-  'function getReserves() external view returns (uint256 reserveETH, uint256 reserveToken)',
+const FACTORY_ADDR='0xAeA76bfa570aCb8e3A0AebB50CBFd6D80a1EDfeC';
+const FACTORY_ABI=[
+  'function buyTokens(address token, uint256 minTokensOut) external payable',
+  'function sellTokens(address token, uint256 tokenAmount, uint256 minETHOut) external',
+  'function getTokensForETH(address token, uint256 ethAmount) external view returns (uint256 tokensOut, uint256 fee)',
+  'function getETHForTokens(address token, uint256 tokenAmount) external view returns (uint256 ethOut)',
+];
+const ERC20_ABI=[
   'function allowance(address owner, address spender) external view returns (uint256)',
   'function approve(address spender, uint256 amount) external returns (bool)',
 ];
@@ -759,21 +762,21 @@ async function executeTrade(){
         else throw sw;
       }
     }
-    const curve=new ethers.Contract(TOKEN_ADDR,BONDING_ABI,signer);
+    const factory=new ethers.Contract(FACTORY_ADDR,FACTORY_ABI,signer);
     showTx('Confirm in wallet...','loading');
     let tx,receipt;
     if(tradeMode==='buy'){
-      const[rETH,rToken]=await curve.getReserves();
-      const fee=amtWei*100n/10000n,ethIn=amtWei-fee;
-      const out=rETH>0n?rToken-((rETH*rToken)/(rETH+ethIn)):ethIn*1000000000n/20000n;
-      tx=await curve.buyTokens(applySlip(out),{value:amtWei});
+      let minOut=0n;
+      try{const[out]=await factory.getTokensForETH(TOKEN_ADDR,amtWei);minOut=applySlip(out);}catch(_){}
+      tx=await factory.buyTokens(TOKEN_ADDR,minOut,{value:amtWei});
       receipt=await tx.wait();
     }else{
-      const al=await curve.allowance(await signer.getAddress(),TOKEN_ADDR);
-      if(al<amtWei){showTx('Approving...','loading');await(await curve.approve(TOKEN_ADDR,amtWei)).wait();}
-      const[rETH,rToken]=await curve.getReserves();
-      const ethOut=rETH>0n?rETH-((rETH*rToken)/(rToken+amtWei)):0n;
-      tx=await curve.sellTokens(amtWei,applySlip(ethOut));
+      const erc20=new ethers.Contract(TOKEN_ADDR,ERC20_ABI,signer);
+      const al=await erc20.allowance(await signer.getAddress(),FACTORY_ADDR);
+      if(al<amtWei){showTx('Approving...','loading');await(await erc20.approve(FACTORY_ADDR,amtWei)).wait();}
+      let minEth=0n;
+      try{const out=await factory.getETHForTokens(TOKEN_ADDR,amtWei);minEth=applySlip(out);}catch(_){}
+      tx=await factory.sellTokens(TOKEN_ADDR,amtWei,minEth);
       receipt=await tx.wait();
     }
     const hash=receipt?.hash||tx?.hash||'';
