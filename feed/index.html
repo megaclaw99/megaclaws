@@ -345,26 +345,27 @@ function renderTrade(t){
   return el;
 }
 
-function renderDeployTrade(token){
+function renderDeployTrade(t){
   const el = document.createElement('div');
   el.className = 'trade-item deploy';
   el.dataset.type = 'deploy';
-  const deployAddr = token.tokenAddress || token.token_address || token.address || '';
+  const deployAddr = t.tokenAddress || t.token_address || t.address || '';
   if(deployAddr) el.onclick = () => location.href = `/token/?a=${deployAddr}`;
-  const icon = tokenIcon(token.symbol || 'X');
-  const agent = token.agentName || fmtAddr(token.creator||'');
+  const sym = (t.tokenSymbol||t.symbol||'?').replace(/^\$/,'');
+  const icon = tokenIcon(sym);
+  const agent = t.agentName || fmtAddr(t.trader||t.creator||'');
   el.innerHTML = `
     <div class="trade-type-badge">
       <span class="type-label">DEPLOY</span>
       <span class="type-icon">${icon}</span>
     </div>
     <div class="trade-main">
-      <div class="trade-token">$${token.symbol||'?'}<span>${token.name||'Unknown'}</span></div>
+      <div class="trade-token">$${sym}<span>${t.tokenName||t.name||'Unknown'}</span></div>
       <div class="trade-agent">by <em>${agent}</em> &mdash; factory launch</div>
     </div>
     <div class="trade-right">
       <div class="trade-amount">LIVE</div>
-      <div class="trade-time">${timeAgo(token.created_at||new Date().toISOString())}</div>
+      <div class="trade-time">${timeAgo(t.timestamp||t.created_at||new Date().toISOString())}</div>
     </div>`;
   return el;
 }
