@@ -577,7 +577,7 @@ async function fetchFeed() {
     renderFeed();
   } catch(e) {
     console.warn('feed fetch failed');
-    if (!apiReachable && allTrades.length === 0) useDemoData();
+    renderFeed(); // show empty state
   }
 }
 
@@ -661,42 +661,7 @@ function connectWS() {
   } catch(e) {}
 }
 
-// ── Demo data (when API + WS both offline) ────────────────────────────────────
-function useDemoData() {
-  const demoTokens = [
-    {id:'1',tokenAddress:'0x1234',name:'MegaClaw',symbol:'CLAW',reserveETH:'3200000000000000000',created_at:new Date(Date.now()-3600000).toISOString(),tradeCount:42},
-    {id:'2',tokenAddress:'0x2345',name:'NeuroBot',symbol:'NEURO',reserveETH:'1500000000000000000',created_at:new Date(Date.now()-7200000).toISOString(),tradeCount:28},
-    {id:'3',tokenAddress:'0x3456',name:'VoidTrader',symbol:'VOID',reserveETH:'6800000000000000000',created_at:new Date(Date.now()-10800000).toISOString(),tradeCount:91},
-    {id:'4',tokenAddress:'0x4567',name:'ApexAgent',symbol:'APEX',reserveETH:'900000000000000000',created_at:new Date(Date.now()-14400000).toISOString(),tradeCount:15},
-    {id:'5',tokenAddress:'0x5678',name:'LunaProtocol',symbol:'LUNA',reserveETH:'4100000000000000000',created_at:new Date(Date.now()-18000000).toISOString(),tradeCount:63},
-  ];
-  allTokens.trending = demoTokens.sort((a,b) => b.tradeCount - a.tradeCount);
-  allTokens.recent   = [...demoTokens].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-
-  const agents=['AGENT_0x7c','CLAW_BOT_A','NEO_TRADER','MEGA_X99','VOID_AI'];
-  const dirs=['BUY','BUY','BUY','SELL','SELL'];
-  const events=[];
-  for(let i=0;i<30;i++){
-    const tok=demoTokens[Math.floor(Math.random()*demoTokens.length)];
-    const dir=dirs[Math.floor(Math.random()*dirs.length)];
-    const eth=(Math.random()*0.1+0.005);
-    events.push({id:'d'+i,direction:dir,tokenSymbol:'$'+tok.symbol,tokenName:tok.name,tokenAddress:tok.tokenAddress,amountIn:(eth*1e18).toFixed(0),amountOut:(eth*1e18).toFixed(0),agentName:agents[Math.floor(Math.random()*agents.length)],timestamp:new Date(Date.now()-Math.random()*3600000).toISOString()});
-  }
-  allTrades = events.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
-  document.getElementById('statVol').textContent='1.42K ETH';
-  document.getElementById('statAgents').textContent='147';
-  document.getElementById('statTrades').textContent='12,489';
-  document.getElementById('statTokens').textContent=demoTokens.length;
-  document.getElementById('tokenCount').textContent=demoTokens.length+' TOTAL';
-  renderTokens(); renderFeed();
-  setInterval(()=>{
-    const tok=demoTokens[Math.floor(Math.random()*demoTokens.length)];
-    const dir=dirs[Math.floor(Math.random()*dirs.length)];
-    const eth=(Math.random()*0.08+0.005);
-    allTrades.unshift({id:'l'+Date.now(),direction:dir,tokenSymbol:'$'+tok.symbol,tokenName:tok.name,tokenAddress:tok.tokenAddress,amountIn:(eth*1e18).toFixed(0),amountOut:(eth*1e18).toFixed(0),agentName:agents[Math.floor(Math.random()*agents.length)],timestamp:new Date().toISOString()});
-    allTrades=allTrades.slice(0,120); renderFeed();
-  }, 2400);
-}
+// demo data removed — real data only
 
 // ── Search ────────────────────────────────────────────────────────────────────
 document.getElementById('searchInput').addEventListener('input', () => renderTokens());
