@@ -280,21 +280,63 @@ function tokenIcon(sym) {
 }
 
 // ── Ticker ────────────────────────────────────────────────────────────────────
-const TICK_TOKENS = ['$CLAW','$NEURO','$VOID','$APEX','$DETH','$LUNA','$MEME','$DARK','$PEPE','$MOON'];
-const TICK_TYPES = [
-  {t:'buy',label:'BUY',vals:['+0.01 ETH','+0.05 ETH','+0.1 ETH'],cls:'buy',badge:'b',sym:'[+]'},
-  {t:'sell',label:'SELL',vals:['-0.02 ETH','-0.08 ETH','-0.03 ETH'],cls:'sell',badge:'s',sym:'[-]'},
-  {t:'deploy',label:'DEPLOY',vals:['live','confirmed','deployed'],cls:'deploy',badge:'d',sym:'[>>]'},
-];
-function rnd(a){return a[Math.floor(Math.random()*a.length)]}
-function buildTicker(){
-  let h='';
-  for(let i=0;i<28;i++){
-    const tp=rnd(TICK_TYPES),tok=rnd(TICK_TOKENS),val=rnd(tp.vals);
-    h+=`<div class="tick-item ${tp.cls}"><span class="tick-badge ${tp.badge}">${tp.sym}</span>${tp.label}<strong style="color:var(--moon)">${tok}</strong>${val}</div>`;
-  }
-  document.getElementById('ticker').innerHTML=h+h;
+function evToTickItem(ev){
+  const sym='$'+(ev.token?.symbol||ev.symbol||ev.tokenSymbol||'???').replace(/^\$/,'');
+  const amtEth=parseFloat(ev.amountEth||ev.amount_eth||ev.amountIn/1e18||0);
+  const usd=amtEth&&ethPrice?amtEth*ethPrice:0;
+  const usdStr=usd>=1000?'$'+(usd/1000).toFixed(1)+'K':usd>0?'$'+usd.toFixed(2):'';
+  const type=(ev.type||ev.direction||'').toLowerCase();
+  if(type==='buy')  return {cls:'buy',   badge:'[+]',  label:'BUY',    tok:sym, val:usdStr?'+'+usdStr:'+'+amtEth.toFixed(4)+' ETH'};
+  if(type==='sell') return {cls:'sell',  badge:'[-]',  label:'SELL',   tok:sym, val:usdStr?'-'+usdStr:'-'+amtEth.toFixed(4)+' ETH'};
+  return               {cls:'deploy', badge:'[>>]', label:'NEW',    tok:sym, val:'LISTED'};
 }
+
+function tickItemHTML(t){
+  return `<div class="tick-item ${t.cls}">${t.badge}&nbsp;${t.label}&nbsp;<strong style="color:var(--moon)">${t.tok}</strong>&nbsp;${t.val}</div>`;
+}
+
+const SEED_TICKS=[
+  {cls:'buy',badge:'[+]',label:'BUY',tok:'$CLAW',val:'+$420'},
+  {cls:'deploy',badge:'[>>]',label:'NEW',tok:'$BASED',val:'LISTED'},
+  {cls:'buy',badge:'[+]',label:'BUY',tok:'$VOID',val:'+$660'},
+  {cls:'sell',badge:'[-]',label:'SELL',tok:'$CLAW',val:'-$690'},
+  {cls:'deploy',badge:'[>>]',label:'NEW',tok:'$DETH',val:'LIVE'},
+  {cls:'buy',badge:'[+]',label:'BUY',tok:'$APEX',val:'+$2.1K'},
+  {cls:'sell',badge:'[-]',label:'SELL',tok:'$MOON',val:'-$230'},
+  {cls:'buy',badge:'[+]',label:'BUY',tok:'$NEURO',val:'+$880'},
+];
+
+async function buildTicker(){
+  const track=document.getElementById('ticker');
+  try{
+    const r=await fetch(`${API}/api/feed?limit=20`,{signal:AbortSignal.timeout(4000)});
+    if(r.ok){
+      const body=await r.json();
+      const evs=body.events||[];
+      if(evs.length){
+        const items=evs.map(evToTickItem);
+        let h='';items.forEach(t=>{h+=tickItemHTML(t);});
+        track.innerHTML=h+h;
+        return;
+      }
+    }
+  }catch(_){}
+  let h='';SEED_TICKS.forEach(t=>{h+=tickItemHTML(t);});
+  track.innerHTML=h+h;
+}
+
+function pushToTicker(ev){
+  const t=evToTickItem(ev);
+  const track=document.getElementById('ticker');
+  if(!track)return;
+  const div=document.createElement('div');
+  div.className=`tick-item ${t.cls}`;
+  div.innerHTML=`${t.badge}&nbsp;${t.label}&nbsp;<strong style="color:var(--moon)">${t.tok}</strong>&nbsp;${t.val}`;
+  track.prepend(div);
+  while(track.children.length>80)track.lastChild.remove();
+}
+
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
 
 // ── Format helpers ────────────────────────────────────────────────────────────
 function fmtEth(wei){
@@ -579,6 +621,7 @@ function connectWS() {
 
         if (type === 'event') {
           const ev = normalizeEvent(data);
+          pushToTicker(data);
           // Prepend to feed if not duplicate
           if (!allTrades.find(t => t.txHash && t.txHash === ev.txHash)) {
             allTrades.unshift(ev);
