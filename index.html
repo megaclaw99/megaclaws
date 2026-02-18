@@ -364,10 +364,10 @@ async function buildTicker(){
   try{
     const r=await fetch(API_BASE+'/api/feed?limit=20',{signal:AbortSignal.timeout(4000)});
     if(r.ok){
-      const evs=await r.json();
-      if(evs&&evs.length){
-        const items=evs.map(evToTickItem);
-        buildTickerFromItems(items);
+      const body=await r.json();
+      const evs=Array.isArray(body)?body:(body.events||[]);
+      if(evs.length){
+        buildTickerFromItems(evs.map(evToTickItem));
         return;
       }
     }
