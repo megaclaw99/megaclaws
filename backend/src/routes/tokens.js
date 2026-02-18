@@ -87,9 +87,9 @@ router.post('/deploy', requireAuth, async (req, res) => {
     const TOTAL_SUPPLY = (1_000_000_000n * (10n ** 18n)).toString();
 
     db.prepare(`
-      INSERT INTO tokens (id, token_address, name, symbol, creator_address, agent_id, tx_hash, reserve_eth, reserve_token)
+      INSERT OR IGNORE INTO tokens (id, token_address, name, symbol, creator_address, agent_id, tx_hash, reserve_eth, reserve_token)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(tokenId, tokenAddress, name, symbol, wallet.address, agent.id, tx.hash, '0', TOTAL_SUPPLY);
+    `).run(tokenId, tokenAddress.toLowerCase(), name, symbol, wallet.address.toLowerCase(), agent.id, tx.hash, '0', TOTAL_SUPPLY);
 
     res.json({
       id: tokenId,

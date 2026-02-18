@@ -69,4 +69,12 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_comments_token ON comments(token_id);
 `);
 
+// Remove case-duplicate tokens keeping the lowercase version
+db.exec(`
+  DELETE FROM tokens WHERE ROWID NOT IN (
+    SELECT MIN(ROWID) FROM tokens GROUP BY LOWER(token_address)
+  );
+  UPDATE tokens SET token_address = LOWER(token_address);
+`);
+
 module.exports = db;
