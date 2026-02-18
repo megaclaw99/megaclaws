@@ -342,7 +342,7 @@ function renderTokenTable(tokens) {
       </td>
       <td>${res}</td>
       <td>${vol}</td>
-      <td>${t.trades||0}</td>
+      <td>${t.tradeCount||0}</td>
       <td><span class="status-badge ${statusClass}">${statusText}</span></td>`;
     tbody.appendChild(tr);
   });
@@ -360,7 +360,8 @@ async function loadActivity(reset=false) {
     if (beforeTs) url += `&before=${beforeTs}`;
     const r = await fetch(url);
     if (!r.ok) throw new Error();
-    const events = await r.json();
+    const d = await r.json();
+    const events = d.events || [];
     const wrap = document.getElementById('activityWrap');
     if (reset) wrap.innerHTML = '';
     if (!events.length && activityPage === 0) {
@@ -369,7 +370,7 @@ async function loadActivity(reset=false) {
     }
     events.forEach(ev => {
       wrap.appendChild(renderActivityItem(ev));
-      beforeTs = ev.ts;
+      if (ev.ts) beforeTs = ev.ts;
     });
     hasMoreActivity = events.length === 20;
     document.getElementById('loadMoreBtn').style.display = hasMoreActivity ? 'block' : 'none';
@@ -386,19 +387,23 @@ function renderActivityItem(ev) {
   div.className = 'activity-item';
   const type = (ev.type||'').toLowerCase();
   let desc = '', amountHtml = '', amountClass = '';
+  // API shape: {type, token:{address,symbol,name}, trader, amountEth, ts, txHash}
+  const sym = ev.token?.symbol || ev.symbol || shortAddr(ev.tokenAddress||ev.token?.address||'');
+  const tokenAddr = ev.token?.address || ev.tokenAddress || '';
+  const ethAmt = parseFloat(ev.amountEth || 0);
   if (type === 'buy') {
-    desc = `Bought <span class="act-token">${esc(ev.symbol||shortAddr(ev.tokenAddress||''))}</span>`;
-    amountHtml = '+' + (ethPrice ? fmtUsd(ev.ethAmount||0) : fmtEth(ev.ethAmount)+'ETH');
+    desc = `Bought <span class="act-token">${esc(sym)}</span>`;
+    amountHtml = '+' + (ethPrice ? fmtUsd(ethAmt) : ethAmt.toFixed(4)+' ETH');
     amountClass = 'green';
   } else if (type === 'sell') {
-    desc = `Sold <span class="act-token">${esc(ev.symbol||shortAddr(ev.tokenAddress||''))}</span>`;
-    amountHtml = '-' + (ethPrice ? fmtUsd(ev.ethAmount||0) : fmtEth(ev.ethAmount)+'ETH');
+    desc = `Sold <span class="act-token">${esc(sym)}</span>`;
+    amountHtml = '-' + (ethPrice ? fmtUsd(ethAmt) : ethAmt.toFixed(4)+' ETH');
     amountClass = 'red';
   } else if (type === 'deploy') {
-    desc = `Deployed <span class="act-token">${esc(ev.symbol||ev.name||'TOKEN')}</span>`;
+    desc = `Deployed <span class="act-token">${esc(ev.token?.symbol||ev.symbol||ev.token?.name||'TOKEN')}</span>`;
     amountHtml = '';
   } else if (type === 'transfer') {
-    desc = `Transfer <span class="act-token">${esc(ev.symbol||shortAddr(ev.tokenAddress||''))}</span>`;
+    desc = `Transfer <span class="act-token">${esc(sym)}</span>`;
     amountHtml = '';
   } else {
     desc = esc(ev.type||'EVENT');
