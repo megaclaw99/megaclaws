@@ -77,4 +77,11 @@ db.exec(`
   UPDATE tokens SET token_address = LOWER(token_address);
 `);
 
+// Add pool_address column for graduated tokens (V4)
+try {
+  db.exec(`ALTER TABLE tokens ADD COLUMN pool_address TEXT`);
+} catch (e) {
+  // Column already exists
+}
+
 module.exports = db;

@@ -1,21 +1,19 @@
 /**
- * Blockchain event indexer
- * Polls MegaETH for TokenCreated + TokensPurchased/TokensSold events
- * Stores into SQLite and broadcasts via WebSocket
+ * Blockchain event indexer for MegaClaw V4 Factory
+ * 
+ * All events (TokenCreated, TokensPurchased, TokensSold, TokenGraduated) 
+ * are on the factory contract itself.
  */
 const { ethers } = require('ethers');
 const { v4: uuidv4 } = require('uuid');
-const { provider, getFactory, getBondingCurve, FACTORY_ABI } = require('./chain');
+const { provider, getFactory, FACTORY_ABI } = require('./chain');
 const db = require('./db');
 const { broadcast, getStats } = require('./ws');
 
 const POLL_INTERVAL = parseInt(process.env.INDEXER_POLL_MS || '8000');
 const FACTORY_ADDRESS = (process.env.FACTORY_CONTRACT || '').toLowerCase();
 
-// Track which token addresses we're watching
-const watchedTokens = new Set();
-let lastFactoryBlock = 0;
-const tokenBlockMap = {}; // tokenAddress → last polled block
+let lastBlock = 0;
 
 // ── DB helpers ─────────────────────────────────────────────────────────────────
 const stmts = {
@@ -36,12 +34,11 @@ const stmts = {
   getAgentByWallet: db.prepare(
     'SELECT id FROM agents WHERE LOWER(wallet_address) = LOWER(?)'
   ),
-  getAllTokenAddresses: db.prepare('SELECT token_address FROM tokens'),
-  getLastBlockForToken: db.prepare(
-    'SELECT MAX(created_at) as ts FROM trades WHERE LOWER(token_address) = LOWER(?)'
-  ),
   setMigrated: db.prepare(
-    'UPDATE tokens SET migrated = 1 WHERE LOWER(token_address) = LOWER(?)'
+    'UPDATE tokens SET migrated = 1, pool_address = ? WHERE LOWER(token_address) = LOWER(?)'
+  ),
+  getTokenByAddress: db.prepare(
+    'SELECT name, symbol FROM tokens WHERE LOWER(token_address) = LOWER(?)'
   ),
 };
 
@@ -61,14 +58,11 @@ async function handleTokenCreated(log, factory) {
     const tokenAddr = token.toLowerCase();
     const ts = Number(timestamp || 0) || Math.floor(Date.now() / 1000);
 
-    // Insert into DB (ignore if already exists)
+    // Insert into DB
     stmts.upsertToken.run(
       uuidv4(), tokenAddr, name, symbol,
       creator.toLowerCase(), log.transactionHash || null, ts
     );
-
-    // Start watching this token
-    watchedTokens.add(tokenAddr);
 
     // Broadcast deploy event
     broadcast('event', {
@@ -78,151 +72,188 @@ async function handleTokenCreated(log, factory) {
       txHash: log.transactionHash,
     });
 
-    // Broadcast updated stats
     broadcast('stats', getStats(db));
-
     console.log(`[indexer] TokenCreated: ${symbol} (${tokenAddr})`);
   } catch (e) {
     console.error('[indexer] handleTokenCreated error:', e.message);
   }
 }
 
-// ── Handle TokensPurchased / TokensSold ────────────────────────────────────────
-async function handleTrade(log, curve, tokenAddress, direction) {
+// ── Handle TokensPurchased ─────────────────────────────────────────────────────
+async function handleTokensPurchased(log, factory) {
   try {
-    const parsed = curve.interface.parseLog(log);
+    const parsed = factory.interface.parseLog(log);
     if (!parsed) return;
 
+    const { token, buyer, ethIn, tokensOut, fee, newReserveETH, newReserveTokens } = parsed.args;
+    const tokenAddr = token.toLowerCase();
     const ts = Math.floor(Date.now() / 1000);
-    let trader, amountIn, amountOut, fee;
+    const agentId = resolveAgent(buyer);
 
-    if (direction === 'BUY') {
-      ({ buyer: trader, ethIn: amountIn, tokensOut: amountOut, fee } = parsed.args);
-    } else {
-      ({ seller: trader, tokensIn: amountIn, ethOut: amountOut, fee } = parsed.args);
-    }
-
-    const agentId = resolveAgent(trader) || 'external';
-    const tradeId = uuidv4();
-
+    // Insert trade
     stmts.insertTrade.run(
-      tradeId, tokenAddress.toLowerCase(), agentId,
-      trader.toLowerCase(), direction,
-      amountIn.toString(), amountOut.toString(),
-      (fee || 0n).toString(),
+      uuidv4(), tokenAddr, agentId,
+      buyer.toLowerCase(), 'BUY',
+      ethIn.toString(), tokensOut.toString(),
+      fee.toString(),
       log.transactionHash || null, ts
     );
 
-    // Refresh reserves
-    try {
-      const bc = getBondingCurve(tokenAddress);
-      const [rEth, rTok] = await bc.getReserves();
-      const migrated = await bc.migrated();
-      stmts.updateReserves.run(rEth.toString(), rTok.toString(), migrated ? 1 : 0, tokenAddress);
-      if (migrated) stmts.setMigrated.run(tokenAddress);
-    } catch (_) {}
+    // Update reserves
+    stmts.updateReserves.run(
+      newReserveETH.toString(),
+      newReserveTokens.toString(),
+      0, // not migrated
+      tokenAddr
+    );
 
-    // Look up token info
-    const tok = db.prepare(
-      'SELECT name, symbol FROM tokens WHERE LOWER(token_address) = LOWER(?)'
-    ).get(tokenAddress);
+    // Get token info for broadcast
+    const tok = stmts.getTokenByAddress.get(tokenAddr);
 
-    // Broadcast trade event
     broadcast('event', {
-      type: direction === 'BUY' ? 'buy' : 'sell',
+      type: 'buy',
       token: {
-        address: tokenAddress.toLowerCase(),
+        address: tokenAddr,
         symbol: tok?.symbol || '???',
         name: tok?.name || 'Unknown',
       },
-      trader: trader.toLowerCase(),
-      amountEth: direction === 'BUY'
-        ? ethers.formatEther(amountIn)
-        : ethers.formatEther(amountOut),
+      trader: buyer.toLowerCase(),
+      amountEth: ethers.formatEther(ethIn),
+      amountTokens: ethers.formatEther(tokensOut),
       ts: new Date(ts * 1000).toISOString(),
       txHash: log.transactionHash,
     });
 
     broadcast('stats', getStats(db));
+    console.log(`[indexer] Buy: ${ethers.formatEther(ethIn)} ETH -> ${tok?.symbol || tokenAddr}`);
   } catch (e) {
-    console.error('[indexer] handleTrade error:', e.message);
+    console.error('[indexer] handleTokensPurchased error:', e.message);
   }
 }
 
-// ── Poll factory for new TokenCreated events ───────────────────────────────────
-async function pollFactory() {
+// ── Handle TokensSold ──────────────────────────────────────────────────────────
+async function handleTokensSold(log, factory) {
+  try {
+    const parsed = factory.interface.parseLog(log);
+    if (!parsed) return;
+
+    const { token, seller, tokensIn, ethOut, newReserveETH, newReserveTokens } = parsed.args;
+    const tokenAddr = token.toLowerCase();
+    const ts = Math.floor(Date.now() / 1000);
+    const agentId = resolveAgent(seller);
+
+    // Insert trade
+    stmts.insertTrade.run(
+      uuidv4(), tokenAddr, agentId,
+      seller.toLowerCase(), 'SELL',
+      tokensIn.toString(), ethOut.toString(),
+      '0', // no fee on sells
+      log.transactionHash || null, ts
+    );
+
+    // Update reserves
+    stmts.updateReserves.run(
+      newReserveETH.toString(),
+      newReserveTokens.toString(),
+      0,
+      tokenAddr
+    );
+
+    const tok = stmts.getTokenByAddress.get(tokenAddr);
+
+    broadcast('event', {
+      type: 'sell',
+      token: {
+        address: tokenAddr,
+        symbol: tok?.symbol || '???',
+        name: tok?.name || 'Unknown',
+      },
+      trader: seller.toLowerCase(),
+      amountEth: ethers.formatEther(ethOut),
+      amountTokens: ethers.formatEther(tokensIn),
+      ts: new Date(ts * 1000).toISOString(),
+      txHash: log.transactionHash,
+    });
+
+    broadcast('stats', getStats(db));
+    console.log(`[indexer] Sell: ${tok?.symbol || tokenAddr} -> ${ethers.formatEther(ethOut)} ETH`);
+  } catch (e) {
+    console.error('[indexer] handleTokensSold error:', e.message);
+  }
+}
+
+// ── Handle TokenGraduated ──────────────────────────────────────────────────────
+async function handleTokenGraduated(log, factory) {
+  try {
+    const parsed = factory.interface.parseLog(log);
+    if (!parsed) return;
+
+    const { token, pool, ethLiquidity, tokenLiquidity, positionId } = parsed.args;
+    const tokenAddr = token.toLowerCase();
+
+    stmts.setMigrated.run(pool.toLowerCase(), tokenAddr);
+
+    const tok = stmts.getTokenByAddress.get(tokenAddr);
+
+    broadcast('event', {
+      type: 'graduate',
+      token: {
+        address: tokenAddr,
+        symbol: tok?.symbol || '???',
+        name: tok?.name || 'Unknown',
+      },
+      pool: pool.toLowerCase(),
+      ethLiquidity: ethers.formatEther(ethLiquidity),
+      tokenLiquidity: ethers.formatEther(tokenLiquidity),
+      ts: new Date().toISOString(),
+      txHash: log.transactionHash,
+    });
+
+    broadcast('stats', getStats(db));
+    console.log(`[indexer] Graduated: ${tok?.symbol || tokenAddr} -> pool ${pool}`);
+  } catch (e) {
+    console.error('[indexer] handleTokenGraduated error:', e.message);
+  }
+}
+
+// ── Poll factory for all events ────────────────────────────────────────────────
+async function poll() {
   try {
     const factory = getFactory();
     const latest = Number(await provider.getBlockNumber());
-    if (lastFactoryBlock === 0) {
-      // On first run, look back ~500 blocks (~1 hour at ~7s/block)
-      lastFactoryBlock = Math.max(0, latest - 500);
+    
+    if (lastBlock === 0) {
+      // On first run, look back ~500 blocks
+      lastBlock = Math.max(0, latest - 500);
     }
-    if (latest <= lastFactoryBlock) return;
+    
+    if (latest <= lastBlock) return;
 
-    const fromBlock = lastFactoryBlock + 1;
+    const fromBlock = lastBlock + 1;
     const toBlock = Math.min(latest, fromBlock + 999); // max 1000 blocks per call
 
-    const filter = factory.filters.TokenCreated();
-    const logs = await factory.queryFilter(filter, fromBlock, toBlock);
-    for (const log of logs) {
-      await handleTokenCreated(log, factory);
-    }
+    // Query all event types
+    const [createLogs, buyLogs, sellLogs, gradLogs] = await Promise.all([
+      factory.queryFilter(factory.filters.TokenCreated(), fromBlock, toBlock),
+      factory.queryFilter(factory.filters.TokensPurchased(), fromBlock, toBlock),
+      factory.queryFilter(factory.filters.TokensSold(), fromBlock, toBlock),
+      factory.queryFilter(factory.filters.TokenGraduated(), fromBlock, toBlock),
+    ]);
 
-    lastFactoryBlock = toBlock;
-  } catch (e) {
-    console.error('[indexer] pollFactory error:', e.message);
-  }
-}
+    // Process in order: creates first, then trades, then graduations
+    for (const log of createLogs) await handleTokenCreated(log, factory);
+    for (const log of buyLogs)    await handleTokensPurchased(log, factory);
+    for (const log of sellLogs)   await handleTokensSold(log, factory);
+    for (const log of gradLogs)   await handleTokenGraduated(log, factory);
 
-// ── Poll each known token for new trades ───────────────────────────────────────
-async function pollTokenTrades() {
-  if (watchedTokens.size === 0) return;
-
-  try {
-    const latest = Number(await provider.getBlockNumber());
-
-    for (const tokenAddress of watchedTokens) {
-      try {
-        const fromBlock = (tokenBlockMap[tokenAddress] || Math.max(0, latest - 200)) + 1;
-        if (fromBlock > latest) continue;
-        const toBlock = Math.min(latest, fromBlock + 999);
-
-        const curve = getBondingCurve(tokenAddress);
-
-        const [buyLogs, sellLogs, migrateLogs] = await Promise.all([
-          curve.queryFilter(curve.filters.TokensPurchased(), fromBlock, toBlock),
-          curve.queryFilter(curve.filters.TokensSold(), fromBlock, toBlock),
-          curve.queryFilter(curve.filters.Migrated(), fromBlock, toBlock),
-        ]);
-
-        for (const log of buyLogs)   await handleTrade(log, curve, tokenAddress, 'BUY');
-        for (const log of sellLogs)  await handleTrade(log, curve, tokenAddress, 'SELL');
-        for (const log of migrateLogs) {
-          stmts.setMigrated.run(tokenAddress);
-          broadcast('event', {
-            type: 'migrate',
-            token: { address: tokenAddress },
-            ts: new Date().toISOString(),
-            txHash: log.transactionHash,
-          });
-        }
-
-        tokenBlockMap[tokenAddress] = toBlock;
-      } catch (_) {}
+    lastBlock = toBlock;
+    
+    if (createLogs.length || buyLogs.length || sellLogs.length || gradLogs.length) {
+      console.log(`[indexer] Block ${fromBlock}-${toBlock}: ${createLogs.length} creates, ${buyLogs.length} buys, ${sellLogs.length} sells, ${gradLogs.length} graduations`);
     }
   } catch (e) {
-    console.error('[indexer] pollTokenTrades error:', e.message);
+    console.error('[indexer] poll error:', e.message);
   }
-}
-
-// ── Bootstrap: load existing tokens from DB ───────────────────────────────────
-function loadKnownTokens() {
-  const rows = stmts.getAllTokenAddresses.all();
-  for (const { token_address } of rows) {
-    watchedTokens.add(token_address.toLowerCase());
-  }
-  console.log(`[indexer] Loaded ${watchedTokens.size} known tokens to watch`);
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
@@ -232,8 +263,7 @@ async function tick() {
   if (running) return;
   running = true;
   try {
-    await pollFactory();
-    await pollTokenTrades();
+    await poll();
   } finally {
     running = false;
   }
@@ -244,9 +274,9 @@ function startIndexer() {
     console.warn('[indexer] RPC_URL or FACTORY_CONTRACT not set — indexer disabled');
     return;
   }
-  loadKnownTokens();
   console.log(`[indexer] Starting — polling every ${POLL_INTERVAL}ms`);
-  tick(); // immediate first tick
+  console.log(`[indexer] Factory: ${process.env.FACTORY_CONTRACT}`);
+  tick();
   setInterval(tick, POLL_INTERVAL);
 }
 

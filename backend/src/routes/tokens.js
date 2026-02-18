@@ -4,7 +4,7 @@ const { ethers } = require('ethers');
 const db = require('../db');
 const { requireAuth } = require('../auth');
 const { decrypt } = require('../crypto');
-const { getFactory, getBondingCurve, getWallet } = require('../chain');
+const { getFactory, getWallet, getTokenInfo, getBondingProgress, estimateBuy, estimateSell } = require('../chain');
 
 const router = express.Router();
 
@@ -20,6 +20,7 @@ function formatToken(row) {
     agentId: row.agent_id,
     txHash: row.tx_hash,
     migrated: !!row.migrated,
+    poolAddress: row.pool_address,
     reserveETH: row.reserve_eth,
     reserveToken: row.reserve_token,
     explorerUrl: `${EXPLORER}/token/${row.token_address}`,
@@ -29,12 +30,16 @@ function formatToken(row) {
 
 async function syncTokenReserves(tokenAddress, tokenId) {
   try {
-    const curve = getBondingCurve(tokenAddress);
-    const [reserveETH, reserveToken] = await curve.getReserves();
-    const migrated = await curve.migrated();
-    db.prepare('UPDATE tokens SET reserve_eth = ?, reserve_token = ?, migrated = ? WHERE id = ?')
-      .run(reserveETH.toString(), reserveToken.toString(), migrated ? 1 : 0, tokenId);
-    return { reserveETH: reserveETH.toString(), reserveToken: reserveToken.toString(), migrated };
+    const info = await getTokenInfo(tokenAddress);
+    db.prepare('UPDATE tokens SET reserve_eth = ?, reserve_token = ?, migrated = ?, pool_address = ? WHERE id = ?')
+      .run(
+        info.reserveETH.toString(), 
+        info.reserveTokens.toString(), 
+        info.graduated ? 1 : 0, 
+        info.graduated ? info.pool : null,
+        tokenId
+      );
+    return info;
   } catch {
     return null;
   }
@@ -63,7 +68,7 @@ router.post('/deploy', requireAuth, async (req, res) => {
     }
 
     const factory = getFactory(wallet);
-    const tx = await factory.createToken(name, symbol);
+    const tx = await factory.createToken(name, symbol, { gasLimit: 300000000n });
     const receipt = await tx.wait();
 
     // Parse TokenCreated event
@@ -125,7 +130,7 @@ router.get('/', async (req, res) => {
       params.push(agentFilter);
     }
     if (creatorFilter) {
-      conditions.push('creator_address = ?');
+      conditions.push('LOWER(creator_address) = LOWER(?)');
       params.push(creatorFilter);
     }
 
@@ -162,7 +167,24 @@ router.get('/:id', async (req, res) => {
     await syncTokenReserves(row.token_address, row.id);
     const updated = db.prepare('SELECT * FROM tokens WHERE id = ?').get(row.id);
 
-    res.json(formatToken(updated));
+    // Get bonding curve progress
+    let progress = null;
+    if (!updated.migrated) {
+      try {
+        progress = await getBondingProgress(row.token_address);
+      } catch {}
+    }
+
+    const token = formatToken(updated);
+    if (progress) {
+      token.bondingProgress = {
+        currentETH: ethers.formatEther(progress.currentETH),
+        targetETH: ethers.formatEther(progress.targetETH),
+        progressPercent: (progress.progressBps / 100).toFixed(2),
+      };
+    }
+
+    res.json(token);
   } catch (err) {
     console.error('get token error:', err);
     res.status(500).json({ error: 'Server error', message: err.message });
@@ -181,7 +203,7 @@ router.get('/:id/holders', async (req, res) => {
 
     // Get unique holders from trades table
     const buyers = db.prepare(
-      "SELECT trader_address, SUM(CASE WHEN direction='BUY' THEN CAST(amount_out AS REAL) ELSE -CAST(amount_in AS REAL) END) as net FROM trades WHERE token_address = ? GROUP BY trader_address HAVING net > 0 ORDER BY net DESC LIMIT 50"
+      "SELECT trader_address, SUM(CASE WHEN direction='BUY' THEN CAST(amount_out AS REAL) ELSE -CAST(amount_in AS REAL) END) as net FROM trades WHERE LOWER(token_address) = LOWER(?) GROUP BY trader_address HAVING net > 0 ORDER BY net DESC LIMIT 50"
     ).all(row.token_address);
 
     const total = buyers.length;
@@ -215,7 +237,7 @@ router.get('/:id/trades', async (req, res) => {
     if (!row) return res.status(404).json({ error: 'Not found', message: 'Token not found' });
 
     const trades = db.prepare(
-      'SELECT t.*, a.name as agent_name FROM trades t LEFT JOIN agents a ON t.agent_id = a.id WHERE t.token_address = ? ORDER BY t.created_at DESC LIMIT ?'
+      'SELECT t.*, a.name as agent_name FROM trades t LEFT JOIN agents a ON t.agent_id = a.id WHERE LOWER(t.token_address) = LOWER(?) ORDER BY t.created_at DESC LIMIT ?'
     ).all(row.token_address, limit);
 
     res.json({
@@ -239,10 +261,7 @@ router.get('/:id/trades', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // GET /api/tokens/:address/quote?direction=BUY|SELL&amount=<wei>
-// Public — no auth required. Returns estimated output.
 router.get('/:address/quote', async (req, res) => {
   try {
     const addr = req.params.address.toLowerCase();
@@ -254,26 +273,42 @@ router.get('/:address/quote', async (req, res) => {
     if (!/^\d+$/.test(amountStr)) {
       return res.status(400).json({ error: 'amount must be a positive integer (wei)' });
     }
-    const { estimateBuy, estimateSell, getBondingCurve } = require('../chain');
-    const { ethers } = require('ethers');
+    
     const amountBig = BigInt(amountStr);
-    let estimated;
+    let estimated, fee = 0n;
+    
     if (direction === 'BUY') {
-      estimated = await estimateBuy(addr, amountBig);
+      const factory = getFactory();
+      const result = await factory.getTokensForETH(addr, amountBig);
+      estimated = result.tokensOut;
+      fee = result.fee;
     } else {
       estimated = await estimateSell(addr, amountBig);
     }
-    const curve = getBondingCurve(addr);
-    const [reserveETH, reserveToken] = await curve.getReserves();
+    
+    // Get token info
+    const info = await getTokenInfo(addr);
+    const progress = await getBondingProgress(addr);
+    
     res.json({
       direction,
       amountIn: amountStr,
       estimatedOut: estimated.toString(),
       estimatedOutFormatted: ethers.formatEther(estimated),
-      reserveETH: ethers.formatEther(reserveETH),
-      reserveToken: ethers.formatEther(reserveToken),
+      fee: fee.toString(),
+      feeFormatted: ethers.formatEther(fee),
+      reserveETH: ethers.formatEther(info.reserveETH),
+      reserveTokens: ethers.formatEther(info.reserveTokens),
+      graduated: info.graduated,
+      bondingProgress: {
+        currentETH: ethers.formatEther(progress.currentETH),
+        targetETH: ethers.formatEther(progress.targetETH),
+        progressPercent: (progress.progressBps / 100).toFixed(2),
+      },
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
+
+module.exports = router;

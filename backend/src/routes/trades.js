@@ -4,11 +4,12 @@ const { ethers } = require('ethers');
 const db = require('../db');
 const { requireAuth } = require('../auth');
 const { decrypt } = require('../crypto');
-const { getBondingCurve, getWallet, applySlippage, estimateBuy, estimateSell } = require('../chain');
+const { getFactory, getERC20, getWallet, applySlippage, estimateBuy, estimateSell, FACTORY_ABI } = require('../chain');
 
 const router = express.Router();
 
 const EXPLORER = 'https://mega.etherscan.io';
+const FACTORY_ADDRESS = process.env.FACTORY_CONTRACT;
 
 // POST /api/trades/execute
 router.post('/execute', requireAuth, async (req, res) => {
@@ -38,12 +39,13 @@ router.post('/execute', requireAuth, async (req, res) => {
     }
 
     if (tokenRow.migrated) {
-      return res.status(400).json({ error: 'Migrated', message: 'Token has graduated to Uniswap V4. Trade there directly.' });
+      return res.status(400).json({ error: 'Migrated', message: 'Token has graduated to Kumbaya V3. Trade there directly.' });
     }
 
     const { agent } = req;
     const privateKey = decrypt(agent.encrypted_pk);
     const wallet = getWallet(privateKey);
+    const factory = getFactory(wallet);
     const amountBig = BigInt(amount);
     const slipBig = BigInt(slippageBps);
 
@@ -62,12 +64,14 @@ router.post('/execute', requireAuth, async (req, res) => {
       const estimated = await estimateBuy(tokenAddress, amountBig);
       const minTokensOut = applySlippage(estimated, slipBig);
 
-      const curve = getBondingCurve(tokenAddress, wallet);
-      tx = await curve.buyTokens(minTokensOut, { value: amountBig });
+      tx = await factory.buyTokens(tokenAddress, minTokensOut, { 
+        value: amountBig,
+        gasLimit: 500000n 
+      });
       receipt = await tx.wait();
 
-      // Parse event
-      const iface = curve.interface;
+      // Parse TokensPurchased event from factory
+      const iface = new ethers.Interface(FACTORY_ABI);
       for (const log of receipt.logs) {
         try {
           const parsed = iface.parseLog(log);
@@ -86,8 +90,8 @@ router.post('/execute', requireAuth, async (req, res) => {
 
     } else {
       // SELL — amount = token amount (wei)
-      const curve = getBondingCurve(tokenAddress, wallet);
-      const tokenBalance = await curve.balanceOf(wallet.address);
+      const token = getERC20(tokenAddress, wallet);
+      const tokenBalance = await token.balanceOf(wallet.address);
       if (tokenBalance < amountBig) {
         return res.status(400).json({
           error: 'Insufficient balance',
@@ -98,18 +102,27 @@ router.post('/execute', requireAuth, async (req, res) => {
       const estimated = await estimateSell(tokenAddress, amountBig);
       const minETHOut = applySlippage(estimated, slipBig);
 
-      tx = await curve.sellTokens(amountBig, minETHOut);
+      // Check and set allowance
+      const allowance = await token.allowance(wallet.address, FACTORY_ADDRESS);
+      if (allowance < amountBig) {
+        const approveTx = await token.approve(FACTORY_ADDRESS, ethers.MaxUint256);
+        await approveTx.wait();
+      }
+
+      tx = await factory.sellTokens(tokenAddress, amountBig, minETHOut, {
+        gasLimit: 500000n
+      });
       receipt = await tx.wait();
 
-      // Parse event
-      const iface = curve.interface;
+      // Parse TokensSold event from factory
+      const iface = new ethers.Interface(FACTORY_ABI);
       for (const log of receipt.logs) {
         try {
           const parsed = iface.parseLog(log);
           if (parsed?.name === 'TokensSold') {
             amountIn = parsed.args.tokensIn.toString();
             amountOut = parsed.args.ethOut.toString();
-            fee = parsed.args.fee.toString();
+            fee = '0'; // No fee on sells in V4
             break;
           }
         } catch {}
@@ -141,13 +154,12 @@ router.post('/execute', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('trade error:', err);
 
-    // Surface revert reason
     const msg = err.reason || err.shortMessage || err.message || 'Unknown error';
-    if (msg.includes('Slippage')) {
+    if (msg.includes('Slippage') || msg.includes('slippage')) {
       return res.status(400).json({ error: 'Slippage', message: 'Trade failed: slippage exceeded. Try increasing slippageBps.' });
     }
-    if (msg.includes('Migrated')) {
-      return res.status(400).json({ error: 'Migrated', message: 'Token has graduated to Uniswap V4.' });
+    if (msg.includes('graduated') || msg.includes('Graduated')) {
+      return res.status(400).json({ error: 'Graduated', message: 'Token has graduated to Kumbaya V3.' });
     }
     res.status(500).json({ error: 'Server error', message: msg });
   }
